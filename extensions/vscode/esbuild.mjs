@@ -24,15 +24,19 @@ function nodePolyfillPlugin() {
   }
 }
 
-function copyWasmPlugin() {
+function copyAssetsPlugin() {
   return {
-    name: 'copy-wasm',
+    name: 'copy-assets',
     setup(build) {
       build.onEnd(() => {
         mkdirSync(resolve(__dirname, 'dist'), { recursive: true })
         copyFileSync(
           resolve(__dirname, 'node_modules/canvaskit-wasm/bin/canvaskit.wasm'),
           resolve(__dirname, 'dist/canvaskit.wasm')
+        )
+        copyFileSync(
+          resolve(__dirname, '../../dist/Inter-Regular.ttf'),
+          resolve(__dirname, 'dist/Inter-Regular.ttf')
         )
       })
     }
@@ -62,7 +66,7 @@ const webviewConfig = {
   sourcemap: true,
   minify: !isWatch,
   tsconfig: resolve(__dirname, 'tsconfig.json'),
-  plugins: [nodePolyfillPlugin(), copyWasmPlugin()],
+  plugins: [nodePolyfillPlugin(), copyAssetsPlugin()],
   define: {
     'process.env.NODE_ENV': '"production"'
   }

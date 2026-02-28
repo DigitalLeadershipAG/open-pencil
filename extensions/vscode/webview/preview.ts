@@ -5,7 +5,8 @@ import type {
   Canvas,
   Paint,
   Font,
-  Typeface
+  Typeface,
+  TypefaceFontProvider
 } from 'canvaskit-wasm'
 import type { SerializedNode, ExtensionMessage, WebviewMessage } from '../src/protocol'
 
@@ -18,6 +19,7 @@ declare const acquireVsCodeApi: () => {
 declare global {
   interface Window {
     __CANVASKIT_WASM_URI__: string
+    __FONT_URI__: string
   }
 }
 
@@ -34,13 +36,18 @@ const SELECTION_STROKE_WIDTH = 2
 
 let ck: CanvasKit | null = null
 let surface: Surface | null = null
-let defaultFont: Font | null = null
 let defaultTypeface: Typeface | null = null
+let fontProvider: TypefaceFontProvider | null = null
+let fontData: ArrayBuffer | null = null
+
 let nodes: SerializedNode[] = []
 let nodeMap = new Map<string, SerializedNode>()
 let selectedNodeId: string | null = null
 let viewport: Viewport = { offsetX: 0, offsetY: 0, scale: 1 }
 let isDarkTheme = true
+
+type SkImage = ReturnType<NonNullable<typeof ck>['MakeImageFromEncoded']>
+const imageCache = new Map<string, SkImage>()
 
 const MAX_FONT_CACHE = 32
 const fontCache = new Map<number, Font>()
@@ -53,7 +60,7 @@ function clearFontCache(): void {
 }
 
 function getCachedFont(fontSize: number): Font | null {
-  if (!ck || !defaultTypeface) return null
+  if (!ck) return null
   const existing = fontCache.get(fontSize)
   if (existing) {
     fontCache.delete(fontSize)
@@ -98,8 +105,62 @@ function rebuildNodeMap(): void {
   for (const n of nodes) nodeMap.set(n.id, n)
 }
 
+function loadImages(images: Record<string, number[]>): void {
+  for (const img of imageCache.values()) {
+    img?.delete()
+  }
+  imageCache.clear()
+
+  if (!ck) return
+
+  for (const [hash, data] of Object.entries(images)) {
+    const bytes = new Uint8Array(data)
+    const img = ck.MakeImageFromEncoded(bytes)
+    if (img) {
+      imageCache.set(hash, img)
+    }
+  }
+}
+
+function setStatus(text: string): void {
+  const el = document.getElementById('status')
+  if (el) {
+    el.textContent = text
+    el.style.display = 'flex'
+  }
+}
+
+function hideStatus(): void {
+  const el = document.getElementById('status')
+  if (el) el.style.display = 'none'
+}
+
 function postError(message: string): void {
+  setStatus(`Error: ${message}`)
   vscode.postMessage({ type: 'error', message })
+}
+
+function waitForCanvasSize(canvas: HTMLCanvasElement, timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+      resolve()
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      observer.disconnect()
+      reject(new Error(`Canvas has zero size after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    const observer = new ResizeObserver(() => {
+      if (canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+        observer.disconnect()
+        clearTimeout(timeout)
+        resolve()
+      }
+    })
+    observer.observe(canvas)
+  })
 }
 
 async function init(): Promise<void> {
@@ -112,56 +173,102 @@ async function init(): Promise<void> {
     return
   }
 
+  setStatus('Loading CanvasKit…')
+
   try {
-    ck = await CanvasKitInit({ locateFile: () => wasmUri })
+    ck = await CanvasKitInit({
+      locateFile: (file: string) => file === 'canvaskit.wasm' ? wasmUri : file
+    })
   } catch (e) {
     postError(`CanvasKit init failed: ${e}`)
     return
   }
 
-  const canvas = document.getElementById('canvas') as HTMLCanvasElement
-  if (!canvas) return
+  setStatus('Creating surface…')
 
-  const gl = canvas.getContext('webgl2')
-  if (!gl) {
-    canvas.style.display = 'none'
-    const fallback = document.getElementById('fallback')
-    if (fallback) fallback.style.display = 'flex'
-    postError('WebGL2 not available')
+  const canvas = document.getElementById('canvas') as HTMLCanvasElement
+  if (!canvas) {
+    postError('Canvas element not found')
+    return
+  }
+
+  canvas.style.display = 'block'
+
+  try {
+    await waitForCanvasSize(canvas, 5000)
+  } catch (e) {
+    postError(e instanceof Error ? e.message : String(e))
     return
   }
 
   resizeCanvas(canvas)
   const createdSurface = ck.MakeWebGLCanvasSurface(canvas)
   if (!createdSurface) {
-    postError('Failed to create WebGL surface')
+    postError('WebGL2 not available or surface creation failed')
     return
   }
   surface = createdSurface
 
-  const createdTypeface = ck.Typeface.MakeFromName('sans-serif', {
-    weight: ck.FontWeight.Normal,
-    width: ck.FontWidth.Normal,
-    slant: ck.FontSlant.Upright
-  })
-  if (!createdTypeface) {
-    postError('Failed to create default typeface')
-    return
+  const fontUri = window.__FONT_URI__
+  if (fontUri) {
+    try {
+      setStatus('Loading font…')
+      const fontResponse = await fetch(fontUri)
+      fontData = await fontResponse.arrayBuffer()
+      defaultTypeface = ck.Typeface.MakeTypefaceFromData(fontData)
+      fontProvider = ck.TypefaceFontProvider.Make()
+      fontProvider.registerFont(fontData, 'Inter')
+    } catch {
+      // Fall through — text renders with CanvasKit built-in font
+    }
   }
-  defaultTypeface = createdTypeface
-  defaultFont = new ck.Font(defaultTypeface, 14)
 
   setupEventListeners(canvas)
+  hideStatus()
 
   vscode.postMessage({ type: 'ready' })
 
-  render()
+  scheduleRender()
 }
 
 function resizeCanvas(canvas: HTMLCanvasElement): void {
   const dpr = window.devicePixelRatio || 1
   canvas.width = Math.floor(canvas.clientWidth * dpr)
   canvas.height = Math.floor(canvas.clientHeight * dpr)
+}
+
+function getRootNodes(): SerializedNode[] {
+  return nodes.filter((n) => !n.parentId || !nodeMap.has(n.parentId))
+}
+
+function fitViewportToContent(canvasWidth: number, canvasHeight: number): void {
+  const roots = getRootNodes()
+  if (roots.length === 0) return
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const node of roots) {
+    minX = Math.min(minX, node.x)
+    minY = Math.min(minY, node.y)
+    maxX = Math.max(maxX, node.x + node.width)
+    maxY = Math.max(maxY, node.y + node.height)
+  }
+
+  const contentW = maxX - minX
+  const contentH = maxY - minY
+  if (contentW <= 0 || contentH <= 0) return
+
+  const padding = 40
+  const scaleX = (canvasWidth - padding * 2) / contentW
+  const scaleY = (canvasHeight - padding * 2) / contentH
+  const scale = Math.min(scaleX, scaleY, 1)
+
+  viewport.scale = scale
+  viewport.offsetX = (canvasWidth - contentW * scale) / 2 - minX * scale
+  viewport.offsetY = (canvasHeight - contentH * scale) / 2 - minY * scale
 }
 
 function render(): void {
@@ -179,11 +286,7 @@ function render(): void {
   canvas.translate(viewport.offsetX, viewport.offsetY)
   canvas.scale(viewport.scale, viewport.scale)
 
-  const rootNodes = nodes.filter((n) => {
-    if (!n.parentId) return true
-    const parent = nodeMap.get(n.parentId)
-    return parent?.type === 'CANVAS'
-  })
+  const rootNodes = getRootNodes()
 
   for (const node of rootNodes) {
     renderNode(canvas, node, nodeMap, 0, 0)
@@ -225,9 +328,11 @@ function renderNode(
     canvas.clipRect(clipRect, ck.ClipOp.Intersect, true)
   }
 
-  for (const fill of node.fills) {
-    if (!fill.visible || fill.opacity <= 0) continue
-    renderFill(canvas, fill, x, y, w, h, node)
+  if (node.type !== 'TEXT') {
+    for (const fill of node.fills) {
+      if (!fill.visible || fill.opacity <= 0) continue
+      renderFill(canvas, fill, x, y, w, h, node)
+    }
   }
 
   for (const stroke of node.strokes) {
@@ -296,7 +401,6 @@ function renderFill(
       shader.delete()
     }
   } else if (fill.type === 'GRADIENT_RADIAL' || fill.type === 'GRADIENT_ANGULAR' || fill.type === 'GRADIENT_DIAMOND') {
-    // Unsupported gradient types rendered as first stop color fallback
     if (fill.gradientStops?.length) {
       const c = fill.gradientStops[0].color
       paint.setColor(ck.Color4f(c.r, c.g, c.b, c.a * fill.opacity))
@@ -304,6 +408,38 @@ function renderFill(
       paint.delete()
       return
     }
+  } else if (fill.type === 'IMAGE' && fill.imageHash) {
+    const img = imageCache.get(fill.imageHash)
+    if (img) {
+      paint.setAlphaf(fill.opacity)
+      if (hasRoundedCorners(node)) {
+        canvas.save()
+        if (node.independentCorners) {
+          const radii = [
+            node.topLeftRadius, node.topLeftRadius,
+            node.topRightRadius, node.topRightRadius,
+            node.bottomRightRadius, node.bottomRightRadius,
+            node.bottomLeftRadius, node.bottomLeftRadius
+          ]
+          canvas.clipRRect(new Float32Array([x, y, x + w, y + h, ...radii]),
+            ck.ClipOp.Intersect, true)
+        } else {
+          canvas.clipRRect(
+            ck.RRectXY(ck.XYWHRect(x, y, w, h), node.cornerRadius, node.cornerRadius),
+            ck.ClipOp.Intersect, true)
+        }
+        canvas.drawImageRect(img, ck.XYWHRect(0, 0, img.width(), img.height()),
+          ck.XYWHRect(x, y, w, h), paint)
+        canvas.restore()
+      } else {
+        canvas.drawImageRect(img, ck.XYWHRect(0, 0, img.width(), img.height()),
+          ck.XYWHRect(x, y, w, h), paint)
+      }
+      paint.delete()
+      return
+    }
+    paint.delete()
+    return
   } else {
     paint.delete()
     return
@@ -388,30 +524,62 @@ function renderStroke(
   paint.delete()
 }
 
+function getTextAlign(align: string) {
+  if (!ck) return undefined
+  switch (align) {
+    case 'CENTER': return ck.TextAlign.Center
+    case 'RIGHT': return ck.TextAlign.Right
+    case 'JUSTIFIED': return ck.TextAlign.Justify
+    default: return ck.TextAlign.Left
+  }
+}
+
 function renderText(
   canvas: Canvas,
   node: SerializedNode,
   x: number,
   y: number
 ): void {
-  if (!node.text || !ck || !defaultTypeface) return
-
-  const textFont = getCachedFont(node.fontSize)
-  if (!textFont) return
-  const paint = new ck.Paint()
-  paint.setAntiAlias(true)
-  paint.setStyle(ck.PaintStyle.Fill)
+  if (!node.text || !ck) return
 
   const textFill = node.fills.find((f) => f.visible && f.type === 'SOLID')
-  if (textFill) {
-    paint.setColor(ck.Color4f(textFill.color.r, textFill.color.g, textFill.color.b, textFill.opacity))
+  const color = textFill
+    ? ck.Color4f(textFill.color.r, textFill.color.g, textFill.color.b, textFill.opacity)
+    : ck.Color4f(0, 0, 0, 1)
+
+  if (fontProvider && fontData) {
+    const fp = ck.TypefaceFontProvider.Make()
+    fp.registerFont(fontData, 'Inter')
+
+    const paraStyle = new ck.ParagraphStyle({
+      textAlign: getTextAlign(node.textAlignHorizontal),
+      textStyle: {
+        color,
+        fontSize: node.fontSize,
+        fontFamilies: ['Inter'],
+        letterSpacing: node.letterSpacing,
+        heightMultiplier: node.lineHeight ? node.lineHeight / node.fontSize : undefined
+      }
+    })
+
+    const builder = ck.ParagraphBuilder.MakeFromFontProvider(paraStyle, fp)
+    builder.addText(node.text)
+    const paragraph = builder.build()
+    paragraph.layout(node.width)
+    canvas.drawParagraph(paragraph, x, y)
+    paragraph.delete()
+    builder.delete()
+    fp.delete()
   } else {
-    paint.setColor(ck.Color4f(0, 0, 0, 1))
+    const textFont = getCachedFont(node.fontSize)
+    if (!textFont) return
+    const paint = new ck.Paint()
+    paint.setAntiAlias(true)
+    paint.setStyle(ck.PaintStyle.Fill)
+    paint.setColor(color)
+    canvas.drawText(node.text, x, y + node.fontSize, paint, textFont)
+    paint.delete()
   }
-
-  canvas.drawText(node.text, x, y + node.fontSize, paint, textFont)
-
-  paint.delete()
 }
 
 function renderSelectionBorder(
@@ -463,13 +631,7 @@ function hitTest(
   const worldX = (mx - viewport.offsetX) / viewport.scale
   const worldY = (my - viewport.offsetY) / viewport.scale
 
-  const rootNodes = nodes.filter((n) => {
-    if (!n.parentId) return true
-    const parent = nodeMap.get(n.parentId)
-    return parent?.type === 'CANVAS'
-  })
-
-  return hitTestChildren(worldX, worldY, rootNodes, nodeMap, 0, 0)
+  return hitTestChildren(worldX, worldY, getRootNodes(), nodeMap, 0, 0)
 }
 
 function hitTestChildren(
@@ -630,13 +792,19 @@ window.addEventListener('message', (event) => {
   const msg = event.data as ExtensionMessage
 
   switch (msg.type) {
-    case 'render-page':
+    case 'render-page': {
       nodes = msg.nodes
       rebuildNodeMap()
+      loadImages(msg.images)
       selectedNodeId = null
-      viewport = { offsetX: 50, offsetY: 50, scale: 1 }
+      viewport = { offsetX: 0, offsetY: 0, scale: 1 }
+      const canvasEl = document.getElementById('canvas') as HTMLCanvasElement | null
+      if (canvasEl) {
+        fitViewportToContent(canvasEl.clientWidth, canvasEl.clientHeight)
+      }
       scheduleRender()
       break
+    }
 
     case 'select-node':
       selectedNodeId = msg.nodeId
@@ -657,4 +825,4 @@ window.addEventListener('message', (event) => {
   }
 })
 
-init()
+init().catch((e) => postError(`Unexpected error: ${e}`))

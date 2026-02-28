@@ -40,7 +40,14 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
   private readonly _onDidChangeDocument = new vscode.EventEmitter<SceneGraph | null>()
   readonly onDidChangeDocument = this._onDidChangeDocument.event
 
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  private readonly output: vscode.OutputChannel
+
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    output: vscode.OutputChannel
+  ) {
+    this.output = output
+  }
 
   dispose(): void {
     this._onDidChangeSelection.dispose()
@@ -129,12 +136,17 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
   }
 
   async openCustomDocument(uri: vscode.Uri): Promise<FigDocument> {
+    this.output.appendLine(`Opening: ${uri.fsPath}`)
     try {
       const data = await vscode.workspace.fs.readFile(uri)
+      this.output.appendLine(`File size: ${data.byteLength} bytes`)
       const graph = await parseFigFile(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength))
+      const pages = graph.getPages()
+      this.output.appendLine(`Parsed: ${pages.length} pages`)
       return new FigDocumentImpl(uri, graph, null)
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
+      this.output.appendLine(`Parse error: ${message}`)
       return new FigDocumentImpl(uri, null, message)
     }
   }
@@ -188,6 +200,7 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
             this._onDidChangeSelection.fire(msg.nodeId)
             break
           case 'error':
+            this.output.appendLine(`Webview error: ${msg.message}`)
             vscode.window.showErrorMessage(`OpenPencil: ${msg.message}`)
             break
         }
@@ -209,13 +222,20 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
   }
 
   private onWebviewReady(webview: vscode.Webview, document: FigDocument): void {
+    this.output.appendLine('Webview ready')
+
     if (document.error) {
+      this.output.appendLine(`Document has error, skipping: ${document.error}`)
       return
     }
 
-    if (!document.graph) return
+    if (!document.graph) {
+      this.output.appendLine('No graph available')
+      return
+    }
 
     const pages = document.graph.getPages()
+    this.output.appendLine(`Sending first page (${pages.length} pages total)`)
     if (pages.length === 0) return
 
     const firstPage = pages[0]
@@ -229,8 +249,10 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
   }
 
   private sendPage(webview: vscode.Webview, graph: SceneGraph, pageId: string): void {
-    const { nodes, truncated } = serializePage(graph, pageId)
-    const msg: ExtensionMessage = { type: 'render-page', pageId, nodes }
+    const { nodes, images, truncated } = serializePage(graph, pageId)
+    const imageCount = Object.keys(images).length
+    this.output.appendLine(`Sending render-page: ${nodes.length} nodes, ${imageCount} images, pageId=${pageId}`)
+    const msg: ExtensionMessage = { type: 'render-page', pageId, nodes, images }
     webview.postMessage(msg)
 
     if (truncated) {
@@ -249,7 +271,14 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
     const wasmUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'dist', 'canvaskit.wasm')
     )
+    const fontUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'dist', 'Inter-Regular.ttf')
+    )
     const cspSource = webview.cspSource
+
+    this.output.appendLine(`Script URI: ${scriptUri.toString()}`)
+    this.output.appendLine(`WASM URI: ${wasmUri.toString()}`)
+    this.output.appendLine(`CSP source: ${cspSource}`)
 
     if (doc.error) {
       return `<!DOCTYPE html>
@@ -280,19 +309,22 @@ export class FigEditorProvider implements vscode.CustomReadonlyEditorProvider<Fi
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}' 'wasm-unsafe-eval'; style-src 'nonce-${nonce}' ${cspSource}; img-src ${cspSource} blob:; connect-src ${cspSource};">
   <style nonce="${nonce}">
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    canvas { display: block; width: 100%; height: 100%; }
-    .fallback { display: none; align-items: center; justify-content: center; height: 100%;
-                font-family: var(--vscode-font-family); color: var(--vscode-descriptionForeground); }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; position: relative; }
+    #canvas { display: block; width: 100%; height: 100%; }
+    #status { display: flex; align-items: center; justify-content: center;
+              position: absolute; inset: 0; z-index: 1;
+              font-family: var(--vscode-font-family); color: var(--vscode-descriptionForeground);
+              font-size: 13px; background: var(--vscode-editor-background, #1e1e1e); }
   </style>
 </head>
 <body>
+  <div id="status">Loading OpenPencil…</div>
   <canvas id="canvas"></canvas>
-  <div id="fallback" class="fallback">WebGL2 is not available</div>
   <script nonce="${nonce}">
-    window.__CANVASKIT_WASM_URI__ = "${wasmUri}";
+    window.__CANVASKIT_WASM_URI__ = ${JSON.stringify(wasmUri.toString())};
+    window.__FONT_URI__ = ${JSON.stringify(fontUri.toString())};
   </script>
-  <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
+  <script nonce="${nonce}" type="module" src="${scriptUri}" onerror="document.getElementById('status').textContent='Failed to load extension script'"></script>
 </body>
 </html>`
   }

@@ -8,11 +8,13 @@ let figFileUris: vscode.Uri[] = []
 let inspectChannel: vscode.OutputChannel | null = null
 
 export function activate(context: vscode.ExtensionContext): void {
+  const output = vscode.window.createOutputChannel('OpenPencil')
   const pagesTree = new PagesTreeProvider()
   const componentsTree = new ComponentsTreeProvider()
-  const editorProvider = new FigEditorProvider(context.extensionUri)
+  const editorProvider = new FigEditorProvider(context.extensionUri, output)
 
   context.subscriptions.push(
+    output,
     editorProvider,
     FigEditorProvider.register(context, editorProvider),
     vscode.window.registerTreeDataProvider('openPencil.pages', pagesTree),
