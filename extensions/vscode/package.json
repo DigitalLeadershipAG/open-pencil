@@ -103,7 +103,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "package": "bunx @vscode/vsce package --no-dependencies"
+    "package": "npx @vscode/vsce package --no-dependencies"
   },
   "dependencies": {
     "canvaskit-wasm": "^0.40.0",

@@ -4,7 +4,7 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "bun run build",
+      "command": "node esbuild.mjs",
       "group": {
         "kind": "build",
         "isDefault": true
