@@ -30,6 +30,12 @@ The root app (`src/`) is the Tauri/Vite desktop editor. Its `src/engine/` files 
 - `bun open-pencil analyze spacing <file>` — gap/padding values
 - `bun open-pencil analyze clusters <file>` — repeated patterns
 
+## CLI
+
+- All CLI output must use `agentfmt` formatters — `fmtList`, `fmtHistogram`, `fmtSummary`, `fmtNode`, `fmtTree`, `kv`, `entity`, `bold`, `dim`, etc.
+- Don't hand-roll `console.log` formatting — use the helpers from `packages/cli/src/format.ts` which re-exports agentfmt with project-specific adapters (`nodeToData`, `nodeDetails`, `nodeToTreeNode`, `nodeToListItem`)
+- Every command supports `--json` for machine-readable output
+
 ## Code conventions
 
 - `@/` import alias for app cross-directory imports, relative imports within core
