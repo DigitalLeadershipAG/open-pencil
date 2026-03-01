@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../../headless'
-import { bold, fmtHistogram, fmtSummary, printError } from '../../format'
+import { bold, fmtHistogram, fmtList, fmtSummary } from '../../format'
 import type { SceneGraph } from '@open-pencil/core'
 
 interface ColorInfo {
@@ -178,9 +178,8 @@ export default defineCommand({
 
     console.log('')
     console.log(
-      fmtSummary({ 'unique colors': colors.length }) + ` from ${totalNodes} nodes`
+      fmtSummary({ 'unique colors': colors.length, 'from variables': fromVars.length, hardcoded: hardcoded.length })
     )
-    console.log(`  ${fromVars.length} from variables, ${hardcoded.length} hardcoded`)
 
     if (args.similar) {
       const clusters = clusterColors(hardcoded, threshold)
@@ -188,12 +187,14 @@ export default defineCommand({
         console.log('')
         console.log(bold('  Similar colors (consider merging)'))
         console.log('')
-        for (const cluster of clusters.slice(0, 10)) {
-          const hexes = cluster.colors.map((c) => c.hex).join(', ')
-          console.log(`  ${hexes}`)
-          console.log(`  → suggest: ${cluster.suggestedHex} (${cluster.totalCount}× total)`)
-          console.log('')
-        }
+        console.log(
+          fmtList(
+            clusters.slice(0, 10).map((cluster) => ({
+              header: cluster.colors.map((c) => c.hex).join(', '),
+              details: { suggest: cluster.suggestedHex, total: `${cluster.totalCount}×` }
+            }))
+          )
+        )
       }
     }
 

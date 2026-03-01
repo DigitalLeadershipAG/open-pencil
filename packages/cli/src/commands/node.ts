@@ -1,59 +1,27 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../headless'
-import { bold, dim, kv, entity, formatType, nodeDetails, printError } from '../format'
+import { fmtNode, fmtList, nodeToData, nodeDetails, formatType, printError } from '../format'
 import type { SceneNode, SceneGraph } from '@open-pencil/core'
 
-function formatNodeFull(graph: SceneGraph, node: SceneNode): string {
-  const lines: string[] = []
-
-  lines.push(`  ${entity(formatType(node.type), node.name, node.id)}`)
-  lines.push('')
+function fullNodeDetails(graph: SceneGraph, node: SceneNode): Record<string, unknown> {
+  const details = nodeDetails(node)
 
   const parent = node.parentId ? graph.getNode(node.parentId) : undefined
-  if (parent) {
-    lines.push(kv('Parent', `${parent.name} ${dim(`(${parent.id})`)}`))
-  }
-
-  lines.push(kv('Position', `${Math.round(node.x)}, ${Math.round(node.y)}`))
-  lines.push(kv('Size', `${Math.round(node.width)} × ${Math.round(node.height)}`))
-
-  const details = nodeDetails(node)
-  for (const [key, value] of Object.entries(details)) {
-    lines.push(kv(key.charAt(0).toUpperCase() + key.slice(1), String(value)))
-  }
+  if (parent) details.parent = `${parent.name} (${parent.id})`
 
   if (node.text) {
-    const preview = node.text.length > 80 ? node.text.slice(0, 80) + '…' : node.text
-    lines.push(kv('Text', `"${preview}"`))
+    details.text = node.text.length > 80 ? node.text.slice(0, 80) + '…' : node.text
   }
 
-  if (node.childIds.length > 0) {
-    lines.push(kv('Children', `${node.childIds.length}`))
+  if (node.childIds.length > 0) details.children = node.childIds.length
 
-    const children = node.childIds
-      .map((id) => graph.getNode(id))
-      .filter((n): n is SceneNode => n !== undefined)
-      .slice(0, 10)
-
-    for (const child of children) {
-      lines.push(`    ${dim(formatType(child.type))} ${child.name} ${dim(`(${child.id})`)}`)
-    }
-    if (node.childIds.length > 10) {
-      lines.push(`    ${dim(`… and ${node.childIds.length - 10} more`)}`)
-    }
+  for (const [field, varId] of Object.entries(node.boundVariables)) {
+    const variable = graph.variables.get(varId)
+    details[`var:${field}`] = variable?.name ?? varId
   }
 
-  if (Object.keys(node.boundVariables).length > 0) {
-    lines.push('')
-    lines.push(bold('  Bound variables'))
-    for (const [field, varId] of Object.entries(node.boundVariables)) {
-      const variable = graph.variables.get(varId)
-      lines.push(`    ${field} → ${variable?.name ?? varId}`)
-    }
-  }
-
-  return lines.join('\n')
+  return details
 }
 
 export default defineCommand({
@@ -91,7 +59,25 @@ export default defineCommand({
     }
 
     console.log('')
-    console.log(formatNodeFull(graph, node))
+    console.log(fmtNode(nodeToData(node), fullNodeDetails(graph, node)))
+
+    if (node.childIds.length > 0) {
+      const children = node.childIds
+        .map((id) => graph.getNode(id))
+        .filter((n): n is SceneNode => n !== undefined)
+        .slice(0, 10)
+        .map((child) => ({
+          header: `[${formatType(child.type)}] "${child.name}" (${child.id})`
+        }))
+
+      if (node.childIds.length > 10) {
+        children.push({ header: `… and ${node.childIds.length - 10} more` })
+      }
+
+      console.log('')
+      console.log(fmtList(children, { compact: true }))
+    }
+
     console.log('')
   }
 })

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../../headless'
-import { bold, fmtHistogram, fmtSummary } from '../../format'
+import { bold, kv, fmtHistogram, fmtSummary } from '../../format'
 import type { SceneGraph } from '@open-pencil/core'
 
 interface SpacingValue {
@@ -105,12 +105,12 @@ export default defineCommand({
 
     if (offGridGaps.length > 0 || offGridPaddings.length > 0) {
       console.log('')
-      console.log(`  ⚠ Off-grid values (not divisible by ${gridSize}px):`)
+      console.log(bold(`  ⚠ Off-grid values (not ÷${gridSize}px)`))
       if (offGridGaps.length > 0) {
-        console.log(`    gaps: ${offGridGaps.map((g) => `${g.value}px`).join(', ')}`)
+        console.log(kv('Gaps', offGridGaps.map((g) => `${g.value}px`).join(', ')))
       }
       if (offGridPaddings.length > 0) {
-        console.log(`    paddings: ${offGridPaddings.map((p) => `${p.value}px`).join(', ')}`)
+        console.log(kv('Paddings', offGridPaddings.map((p) => `${p.value}px`).join(', ')))
       }
     }
 

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../headless'
-import { bold, entity, formatType, dim } from '../format'
+import { bold, fmtList, entity, formatType } from '../format'
 
 export default defineCommand({
   meta: { description: 'List pages in a .fig file' },
@@ -13,19 +13,22 @@ export default defineCommand({
     const graph = await loadDocument(args.file)
     const pages = graph.getPages()
 
+    const countNodes = (pageId: string): number => {
+      let count = 0
+      const walk = (id: string) => {
+        count++
+        const n = graph.getNode(id)
+        if (n) for (const cid of n.childIds) walk(cid)
+      }
+      const page = graph.getNode(pageId)
+      if (page) for (const cid of page.childIds) walk(cid)
+      return count
+    }
+
     if (args.json) {
       console.log(
         JSON.stringify(
-          pages.map((p) => {
-            let count = 0
-            const walk = (id: string) => {
-              count++
-              const n = graph.getNode(id)
-              if (n) for (const cid of n.childIds) walk(cid)
-            }
-            for (const cid of p.childIds) walk(cid)
-            return { id: p.id, name: p.name, nodes: count }
-          }),
+          pages.map((p) => ({ id: p.id, name: p.name, nodes: countNodes(p.id) })),
           null,
           2
         )
@@ -36,18 +39,15 @@ export default defineCommand({
     console.log('')
     console.log(bold(`  ${pages.length} page${pages.length !== 1 ? 's' : ''}`))
     console.log('')
-
-    for (const page of pages) {
-      let count = 0
-      const walk = (id: string) => {
-        count++
-        const n = graph.getNode(id)
-        if (n) for (const cid of n.childIds) walk(cid)
-      }
-      for (const cid of page.childIds) walk(cid)
-
-      console.log(`  ${entity(formatType(page.type), page.name, page.id)} ${dim(`${count} nodes`)}`)
-    }
+    console.log(
+      fmtList(
+        pages.map((page) => ({
+          header: entity(formatType(page.type), page.name, page.id),
+          details: { nodes: countNodes(page.id) }
+        })),
+        { compact: true }
+      )
+    )
     console.log('')
   }
 })

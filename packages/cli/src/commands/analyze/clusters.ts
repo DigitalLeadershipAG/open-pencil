@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../../headless'
-import { bold, dim, fmtSummary } from '../../format'
+import { bold, fmtList, fmtSummary } from '../../format'
 import type { SceneNode, SceneGraph } from '@open-pencil/core'
 
 interface ClusterNode {
@@ -132,11 +132,9 @@ export default defineCommand({
     console.log(bold('  Repeated patterns'))
     console.log('')
 
-    for (let i = 0; i < Math.min(clusters.length, limit); i++) {
-      const c = clusters[i]!
+    const items = clusters.slice(0, limit).map((c) => {
       const first = c.nodes[0]!
       const confidence = calcConfidence(c.nodes)
-      const typeLower = first.type.toLowerCase()
 
       const widths = c.nodes.map((n) => n.width)
       const heights = c.nodes.map((n) => n.height)
@@ -150,15 +148,20 @@ export default defineCommand({
           ? `${avgW}×${avgH}`
           : `${avgW}×${avgH} (±${Math.max(wRange, hRange)}px)`
 
-      console.log(`  ${dim(`[${i}]`)} ${c.nodes.length}× ${typeLower} "${first.name}" ${dim(`(${confidence}% match)`)}`)
-      console.log(`      ${sizeStr} | ${formatSignature(c.signature)}`)
-      console.log(
-        `      ${dim(c.nodes.slice(0, 3).map((n) => n.id).join(', '))}`
-      )
-      console.log('')
-    }
+      return {
+        header: `${c.nodes.length}× ${first.type.toLowerCase()} "${first.name}" (${confidence}% match)`,
+        details: {
+          size: sizeStr,
+          structure: formatSignature(c.signature),
+          examples: c.nodes.slice(0, 3).map((n) => n.id).join(', ')
+        }
+      }
+    })
+
+    console.log(fmtList(items, { numbered: true }))
 
     const clusteredNodes = clusters.reduce((sum, c) => sum + c.nodes.length, 0)
+    console.log('')
     console.log(
       fmtSummary({ clusters: clusters.length }) +
         ` from ${totalNodes} nodes (${clusteredNodes} clustered)`

@@ -1,13 +1,13 @@
 import { defineCommand } from 'citty'
 
 import { loadDocument } from '../headless'
-import { bold, dim } from '../format'
+import { bold, fmtList, fmtSummary } from '../format'
 import type { SceneGraph, Variable } from '@open-pencil/core'
 
 function formatValue(variable: Variable, graph: SceneGraph): string {
   const modeId = graph.getActiveModeId(variable.collectionId)
   const raw = variable.valuesByMode[modeId]
-  if (raw === undefined) return dim('–')
+  if (raw === undefined) return '–'
 
   if (typeof raw === 'object' && raw !== null && 'aliasId' in raw) {
     const alias = graph.variables.get(raw.aliasId)
@@ -70,21 +70,25 @@ export default defineCommand({
       if (collVars.length === 0) continue
 
       const modes = coll.modes.map((m) => m.name).join(', ')
-      console.log(bold(`  ${coll.name}`) + dim(` (${modes})`))
+      console.log(bold(`  ${coll.name}`) + ` (${modes})`)
       console.log('')
-
-      for (const v of collVars) {
-        const value = formatValue(v, graph)
-        const typeBadge = dim(`[${v.type.toLowerCase()}]`)
-        console.log(`    ${v.name} = ${value} ${typeBadge}`)
-      }
+      console.log(
+        fmtList(
+          collVars.map((v) => ({
+            header: v.name,
+            details: { value: formatValue(v, graph), type: v.type.toLowerCase() }
+          })),
+          { compact: true }
+        )
+      )
       console.log('')
     }
 
     console.log(
-      dim(
-        `  ${variables.length} variable${variables.length !== 1 ? 's' : ''} in ${collections.length} collection${collections.length !== 1 ? 's' : ''}`
-      )
+      fmtSummary({
+        variables: variables.length,
+        collections: collections.length
+      })
     )
     console.log('')
   }

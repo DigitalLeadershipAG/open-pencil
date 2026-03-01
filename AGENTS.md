@@ -21,7 +21,14 @@ The root app (`src/`) is the Tauri/Vite desktop editor. Its `src/engine/` files 
 - `bun open-pencil info <file>` — document stats
 - `bun open-pencil tree <file>` — node tree
 - `bun open-pencil find <file>` — search nodes
+- `bun open-pencil node <file> --id <id>` — detailed node properties
+- `bun open-pencil pages <file>` — list pages
+- `bun open-pencil variables <file>` — list design variables
 - `bun open-pencil export <file>` — headless render to PNG/JPG/WEBP
+- `bun open-pencil analyze colors <file>` — color palette usage
+- `bun open-pencil analyze typography <file>` — font/size/weight stats
+- `bun open-pencil analyze spacing <file>` — gap/padding values
+- `bun open-pencil analyze clusters <file>` — repeated patterns
 
 ## Code conventions
 
