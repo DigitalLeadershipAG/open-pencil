@@ -705,7 +705,10 @@ export function createDemoShapes(store: EditorStore) {
 
   // ─── Section: Effects Showcase ──────────────────────────────────
   const effectsSectionId = store.createShape('SECTION', 60, 840, 920, 480)
-  graph.updateNode(effectsSectionId, { name: 'Effects' })
+  graph.updateNode(effectsSectionId, {
+    name: 'Effects',
+    fills: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 }, visible: true, opacity: 1 }]
+  })
 
   function dropShadow(
     ox = 0,
