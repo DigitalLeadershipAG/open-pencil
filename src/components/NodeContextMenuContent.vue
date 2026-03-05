@@ -262,6 +262,14 @@ const menuClass =
         <span>Export as PNG</span>
         <span class="text-[11px] text-muted">⇧⌘E</span>
       </ContextMenuItem>
+
+      <ContextMenuItem
+        data-test-id="context-export-svg"
+        :class="itemClass"
+        @select="store.exportSelection(1, 'SVG')"
+      >
+        <span>Export as SVG</span>
+      </ContextMenuItem>
     </template>
   </ContextMenuContent>
 </template>
