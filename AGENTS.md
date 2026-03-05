@@ -6,11 +6,12 @@ Vue 3 + CanvasKit (Skia WASM) + Yoga WASM design editor. Tauri v2 desktop, also 
 
 ## Monorepo
 
-Bun workspace with three packages:
+Bun workspace with four packages:
 
 - `packages/core` — `@open-pencil/core`: scene graph, renderer, layout, codec, kiwi, clipboard, vector, snap, undo. Zero DOM deps, runs headless in Bun.
 - `packages/cli` — `@open-pencil/cli`: headless CLI for .fig inspection, export, linting. Uses `citty` + `agentfmt`.
 - `packages/mcp` — `@open-pencil/mcp`: MCP server for AI coding tools. Stdio + HTTP (Hono). Reuses `createServer()` factory with all core tools.
+- `packages/acp` — `@open-pencil/acp`: ACP agent for editor integration (Zed, JetBrains, Neovim). Stdio JSON-RPC. Reuses core ToolDefs via `createAgent()` factory.
 
 The root app (`src/`) is the Tauri/Vite desktop editor. Its `src/engine/` files are thin re-export shims from `@open-pencil/core`.
 
@@ -38,14 +39,14 @@ The root app (`src/`) is the Tauri/Vite desktop editor. Its `src/engine/` files 
 
 ### How to release
 
-1. Update version in `package.json`, `packages/core/package.json`, `packages/cli/package.json`, `desktop/tauri.conf.json`
+1. Update version in `package.json`, `packages/core/package.json`, `packages/cli/package.json`, `packages/acp/package.json`, `desktop/tauri.conf.json`
 2. Update `CHANGELOG.md` — move "Unreleased" items under new version heading with date
 3. Commit: `Release v0.x.y`
 4. Tag: `git tag v0.x.y && git push --tags`
 5. The `build.yml` workflow triggers on `v*` tags and:
    - Builds Tauri binaries for macOS (arm64 + x64), Windows (x64 + arm64), Linux (x64)
    - Creates a draft GitHub Release with all platform binaries
-   - Publishes `@open-pencil/core` and `@open-pencil/cli` to npm with provenance
+   - Publishes `@open-pencil/core`, `@open-pencil/cli`, `@open-pencil/mcp`, and `@open-pencil/acp` to npm with provenance
 6. Go to GitHub Releases → edit the draft → paste changelog section → publish
 
 ### CI workflows
