@@ -331,15 +331,6 @@ const menuClass =
           </ContextMenuSubContent>
         </ContextMenuPortal>
       </ContextMenuSub>
-
-      <ContextMenuItem
-        data-test-id="context-export-png"
-        :class="itemClass"
-        @select="store.exportSelection(1, 'PNG')"
-      >
-        <span>Export as PNG</span>
-        <span class="text-[11px] text-muted">⇧⌘E</span>
-      </ContextMenuItem>
     </template>
   </ContextMenuContent>
 </template>
