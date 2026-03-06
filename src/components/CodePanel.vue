@@ -65,7 +65,7 @@ watch(jsxCode, () => {
           class="rounded px-1.5 py-0.5 text-[11px] text-muted hover:bg-hover hover:text-surface"
           @click="toggleFormat"
         >
-          {{ jsxFormat === 'openpencil' ? 'StyleX' : 'Tailwind' }}
+          {{ jsxFormat === 'openpencil' ? 'OpenPencil' : 'Tailwind' }}
         </button>
       </div>
       <button

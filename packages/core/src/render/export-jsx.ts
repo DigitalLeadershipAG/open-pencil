@@ -79,6 +79,28 @@ function formatShadow(e: Effect): string | null {
   return `${e.offset.x} ${e.offset.y} ${e.radius} ${formatColor(e.color, e.color.a)}`
 }
 
+function formatTailwindShadow(e: Effect): string | null {
+  if (e.type !== 'DROP_SHADOW' && e.type !== 'INNER_SHADOW') return null
+  const { r, g, b } = e.color
+  const color = `rgba(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)},${Number(e.color.a.toFixed(3))})`
+  const inset = e.type === 'INNER_SHADOW' ? 'inset_' : ''
+  const spread = e.spread !== 0 ? `_${e.spread}px` : ''
+  return `${inset}${e.offset.x}px_${e.offset.y}px_${e.radius}px${spread}_${color}`
+}
+
+function formatTailwindAngle(degrees: number): string {
+  const rounded = Number(degrees.toFixed(2))
+  const integer = Math.round(rounded)
+  const named = new Set([0, 1, 2, 3, 6, 12, 45, 90, 180])
+  if (rounded === integer && named.has(integer)) return String(integer)
+  return `[${rounded}deg]`
+}
+
+function formatTailwindFontFamily(fontFamily: string): string {
+  const escaped = fontFamily.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  return `['${escaped}']`
+}
+
 const JSX_ENTITY: Record<string, string> = {
   '{': '&#123;',
   '}': '&#125;',
@@ -377,20 +399,25 @@ function collectTailwindClasses(node: SceneNode, graph: SceneGraph): string[] {
   }
 
   if (node.opacity < 1) classes.push(`opacity-${opacityToTw(node.opacity)}`)
-  if (node.rotation !== 0) classes.push(`rotate-${Math.round(node.rotation)}`)
+  if (node.rotation !== 0) classes.push(`rotate-${formatTailwindAngle(node.rotation)}`)
   if (node.clipsContent) classes.push('overflow-hidden')
 
   for (const effect of node.effects) {
     if (!effect.visible) continue
-    if (effect.type === 'DROP_SHADOW') classes.push('shadow')
-    else if (effect.type === 'LAYER_BLUR') classes.push(`blur-[${effect.radius}px]`)
-    else if (effect.type === 'BACKGROUND_BLUR') classes.push(`backdrop-blur-[${effect.radius}px]`)
+    if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
+      const shadow = formatTailwindShadow(effect)
+      if (shadow) classes.push(`shadow-[${shadow}]`)
+    } else if (effect.type === 'LAYER_BLUR' || effect.type === 'FOREGROUND_BLUR') {
+      classes.push(`blur-[${effect.radius}px]`)
+    } else if (effect.type === 'BACKGROUND_BLUR') {
+      classes.push(`backdrop-blur-[${effect.radius}px]`)
+    }
   }
 
   if (node.type === 'TEXT') {
     classes.push(`text-${fontSizeToTw(node.fontSize)}`)
     if (node.fontFamily && node.fontFamily !== DEFAULT_FONT_FAMILY) {
-      classes.push(`font-['${node.fontFamily.replace(/\s+/g, '_')}']`)
+      classes.push(`font-${formatTailwindFontFamily(node.fontFamily)}`)
     }
     if (node.fontWeight !== 400) classes.push(`font-${fontWeightToTw(node.fontWeight)}`)
     if (node.textAlignHorizontal !== 'LEFT') {

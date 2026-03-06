@@ -258,6 +258,19 @@ describe('Tailwind JSX export', () => {
     expect(jsx).toContain('rotate-45')
   })
 
+  test('non-standard opacity and rotation use arbitrary values', () => {
+    const graph = makeGraph()
+    const node = graph.createNode('RECTANGLE', pageId(graph), {
+      width: 50,
+      height: 50,
+      opacity: 0.37,
+      rotation: 13
+    })
+    const jsx = tw(graph, node.id)
+    expect(jsx).toContain('opacity-[0.37]')
+    expect(jsx).toContain('rotate-[13deg]')
+  })
+
   test('overflow hidden', () => {
     const graph = makeGraph()
     const frame = graph.createNode('FRAME', pageId(graph), {
@@ -268,7 +281,7 @@ describe('Tailwind JSX export', () => {
     expect(tw(graph, frame.id)).toContain('overflow-hidden')
   })
 
-  test('shadow emits shadow class', () => {
+  test('shadow emits arbitrary shadow class', () => {
     const graph = makeGraph()
     const node = graph.createNode('RECTANGLE', pageId(graph), {
       width: 100,
@@ -284,7 +297,26 @@ describe('Tailwind JSX export', () => {
         }
       ]
     })
-    expect(tw(graph, node.id)).toContain('shadow')
+    expect(tw(graph, node.id)).toContain('shadow-[0px_4px_8px_rgba(0,0,0,0.25)]')
+  })
+
+  test('inner shadow includes inset and spread', () => {
+    const graph = makeGraph()
+    const node = graph.createNode('RECTANGLE', pageId(graph), {
+      width: 100,
+      height: 100,
+      effects: [
+        {
+          type: 'INNER_SHADOW',
+          color: { r: 1, g: 0, b: 0, a: 0.5 },
+          offset: { x: 1, y: 2 },
+          radius: 3,
+          spread: 4,
+          visible: true
+        }
+      ]
+    })
+    expect(tw(graph, node.id)).toContain('shadow-[inset_1px_2px_3px_4px_rgba(255,0,0,0.5)]')
   })
 
   test('blur emits blur class', () => {
@@ -339,6 +371,17 @@ describe('Tailwind JSX export', () => {
       fontWeight: 600
     })
     expect(tw(graph, node.id)).toContain('font-semibold')
+  })
+
+  test('font family keeps original spaces via arbitrary value', () => {
+    const graph = makeGraph()
+    const node = graph.createNode('TEXT', pageId(graph), {
+      width: 100,
+      height: 20,
+      text: 'X',
+      fontFamily: 'IBM Plex Sans'
+    })
+    expect(tw(graph, node.id)).toContain("font-['IBM Plex Sans']")
   })
 
   test('section uses <section> tag', () => {

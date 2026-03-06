@@ -28,6 +28,30 @@ const FONT_SIZE_TO_TW = new Map<number, string>([
   [128, '9xl']
 ])
 
+const OPACITY_TO_TW = new Map<number, string>([
+  [0, '0'],
+  [5, '5'],
+  [10, '10'],
+  [15, '15'],
+  [20, '20'],
+  [25, '25'],
+  [30, '30'],
+  [35, '35'],
+  [40, '40'],
+  [45, '45'],
+  [50, '50'],
+  [55, '55'],
+  [60, '60'],
+  [65, '65'],
+  [70, '70'],
+  [75, '75'],
+  [80, '80'],
+  [85, '85'],
+  [90, '90'],
+  [95, '95'],
+  [100, '100']
+])
+
 const FONT_WEIGHT_TO_TW = new Map<number, string>([
   [100, 'thin'],
   [200, 'extralight'],
@@ -86,5 +110,5 @@ export function borderRadiusToTw(px: number): string {
 
 export function opacityToTw(n: number): string {
   const pct = Math.round(n * 100)
-  return String(pct)
+  return OPACITY_TO_TW.get(pct) ?? `[${n}]`
 }
