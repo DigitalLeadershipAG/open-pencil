@@ -4,6 +4,7 @@ import { basename, extname, resolve } from 'node:path'
 import { renderNodesToSVG, sceneNodeToJSX, selectionToJSX } from '@open-pencil/core'
 
 import { loadDocument, loadFonts, exportNodes, exportThumbnail } from '../headless'
+import { isAppMode, requireFile, rpc } from '../app-client'
 import { ok, printError } from '../format'
 import type { ExportFormat, JSXFormat } from '@open-pencil/core'
 
@@ -14,7 +15,7 @@ const JSX_STYLES = ['openpencil', 'tailwind']
 export default defineCommand({
   meta: { description: 'Export a .fig file to PNG, JPG, WEBP, SVG, or JSX' },
   args: {
-    file: { type: 'positional', description: '.fig file path', required: true },
+    file: { type: 'positional', description: '.fig file path (omit to connect to running app)', required: false },
     output: { type: 'string', alias: 'o', description: 'Output file path (default: <name>.<format>)' },
     format: { type: 'string', alias: 'f', description: 'Export format: png, jpg, webp, svg, jsx (default: png)', default: 'png' },
     scale: { type: 'string', alias: 's', description: 'Export scale (default: 1)', default: '1' },
@@ -38,7 +39,49 @@ export default defineCommand({
       process.exit(1)
     }
 
-    const graph = await loadDocument(args.file)
+    if (isAppMode(args.file)) {
+      if (format === 'SVG') {
+        const result = await rpc<{ svg: string }>('tool', { name: 'export_svg', args: { ids: args.node ? [args.node] : undefined } })
+        if (!result.svg) {
+          printError('Nothing to export.')
+          process.exit(1)
+        }
+        const output = resolve(args.output ?? 'export.svg')
+        await Bun.write(output, result.svg)
+        console.log(ok(`Exported ${output} (${(result.svg.length / 1024).toFixed(1)} KB)`))
+        return
+      }
+
+      if (format === 'JSX') {
+        const result = await rpc<{ jsx: string }>('export_jsx', {
+          nodeIds: args.node ? [args.node] : undefined,
+          style: args.style
+        })
+        if (!result.jsx) {
+          printError('Nothing to export.')
+          process.exit(1)
+        }
+        const output = resolve(args.output ?? 'export.jsx')
+        await Bun.write(output, result.jsx)
+        console.log(ok(`Exported ${output} (${(result.jsx.length / 1024).toFixed(1)} KB)`))
+        return
+      }
+
+      const result = await rpc<{ base64: string }>('export', {
+        nodeIds: args.node ? [args.node] : undefined,
+        scale: Number(args.scale),
+        format: format.toLowerCase()
+      })
+      const data = Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))
+      const ext = format.toLowerCase() === 'jpg' ? 'jpg' : format.toLowerCase()
+      const output = resolve(args.output ?? `export.${ext}`)
+      await Bun.write(output, data)
+      console.log(ok(`Exported ${output} (${(data.length / 1024).toFixed(1)} KB)`))
+      return
+    }
+
+    const file = requireFile(args.file)
+    const graph = await loadDocument(file)
     await loadFonts(graph)
 
     const pages = graph.getPages()
@@ -51,7 +94,7 @@ export default defineCommand({
       process.exit(1)
     }
 
-    const defaultName = basename(args.file, extname(args.file))
+    const defaultName = basename(file, extname(file))
 
     if (format === 'JSX') {
       const jsxFormat = args.style as JSXFormat

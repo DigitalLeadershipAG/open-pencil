@@ -49,6 +49,16 @@ export {
 export { FigmaAPI, FigmaNodeProxy, type FigmaFontName } from './figma-api'
 export { ALL_TOOLS, defineTool, toolsToAI } from './tools'
 export type { ToolDef, ParamDef, ParamType } from './tools'
+export { executeRpcCommand, ALL_RPC_COMMANDS } from './rpc'
+export type {
+  InfoResult, PageItem, TreeArgs, TreeResult, TreeNodeResult,
+  FindArgs, FindNodeResult, NodeArgs, NodeResult,
+  VariablesArgs, VariablesResult,
+  AnalyzeColorsArgs, AnalyzeColorsResult,
+  AnalyzeTypographyArgs, AnalyzeTypographyResult,
+  AnalyzeSpacingResult, SpacingValue,
+  AnalyzeClustersArgs, AnalyzeClustersResult, TypographyStyle
+} from './rpc'
 export { SkiaRenderer, type RenderOverlays } from './renderer/index'
 export {
   RenderProfiler,
@@ -132,6 +142,7 @@ export {
 } from './kiwi-serialize'
 
 export {
+  createElement,
   renderTree,
   renderJSX,
   renderTreeNode,
@@ -153,6 +164,7 @@ export {
   Page as PageNode,
   INTRINSIC_ELEMENTS,
   isTreeNode,
+  resolveToTree,
   node,
   type TreeNode,
   type BaseProps,

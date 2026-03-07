@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide } from 'vue'
+import { provide, onUnmounted } from 'vue'
 import { useBreakpoints, useEventListener, useUrlSearchParams } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
@@ -8,9 +8,10 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { useKeyboard } from '@/composables/use-keyboard'
 import { useMenu } from '@/composables/use-menu'
 import { useCollab, COLLAB_KEY } from '@/composables/use-collab'
+import { connectAutomation } from '@/automation/server'
 import { createDemoShapes } from '@/demo'
 import { useEditorStore } from '@/stores/editor'
-import { createTab, activeTab } from '@/stores/tabs'
+import { createTab, activeTab, getActiveStore } from '@/stores/tabs'
 
 import CollabPanel from '@/components/CollabPanel.vue'
 import EditorCanvas from '@/components/EditorCanvas.vue'
@@ -29,6 +30,8 @@ const breakpoints = useBreakpoints({ mobile: 768 })
 const isMobile = breakpoints.smaller('mobile')
 useKeyboard()
 useMenu()
+const { disconnect: disconnectAutomation } = connectAutomation(getActiveStore)
+onUnmounted(disconnectAutomation)
 const collab = useCollab(firstTab.store)
 provide(COLLAB_KEY, collab)
 
