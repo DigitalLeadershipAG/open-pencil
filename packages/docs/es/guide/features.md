@@ -124,7 +124,7 @@ Los archivos se guardan automáticamente 3 segundos después del último cambio 
 
 Colaboración peer-to-peer en tiempo real — sin servidor requerido. Comparte un enlace y edita junto. Basado en Trystero (WebRTC) para conexiones directas entre pares y Yjs (CRDT) para sincronización de documentos sin conflictos.
 
-- **Zero costes de hosting** — señalización vía brokers MQTT públicos, datos fluyen directamente entre pares
+- **Cero costes de hosting** — señalización vía brokers MQTT públicos, datos fluyen directamente entre pares
 - **Traversal NAT** — servidores Google STUN, Cloudflare STUN y Open Relay TURN
 - **Cursores en vivo** — flechas de cursor coloreadas estilo Figma con borde blanco y píldoras de nombre
 - **Presencia** — ve quién está en la sala con avatares coloreados
@@ -166,9 +166,9 @@ Creación programática de diseño vía funciones TreeNode builder exportadas de
 
 Asistente IA integrado accesible vía la pestaña IA o <kbd>⌘</kbd><kbd>J</kbd>. Comunica directamente con OpenRouter — sin servidor backend requerido.
 
-**75 herramientas** definidas en `packages/core/src/tools/schema.ts`, cubriendo: operaciones de lectura, creación, modificación, manipulación de nodos, CRUD de variables, herramientas de rutas vectoriales, control de viewport y un escape hatch `eval`. Las herramientas están conectadas al chat IA (schemas valibot), servidor MCP (schemas zod) y CLI (comando `eval`).
+**86 herramientas** definidas en `packages/core/src/tools/`, cubriendo: operaciones de lectura, creación, modificación, manipulación de nodos, CRUD de variables, herramientas de rutas vectoriales, control de viewport y un escape hatch `eval`. Las herramientas están conectadas al chat IA (schemas valibot), servidor MCP (schemas zod) y CLI (comando `eval`).
 
-**Servidor MCP** (`packages/mcp/`) expone todas las herramientas para herramientas de codificación IA externas. Dos transportes: stdio y HTTP con Hono. Añade 3 herramientas de gestión de archivos sobre las 75 herramientas core (= 78 en total), para 78 en total.
+**Servidor MCP** (`packages/mcp/`) expone todas las herramientas para herramientas de codificación IA externas. Dos transportes: stdio y HTTP con Hono. Añade 3 herramientas de gestión de archivos sobre las 86 herramientas core (= 78 en total), para 78 en total.
 
 ## Exportación SVG
 

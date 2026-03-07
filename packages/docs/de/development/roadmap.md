@@ -24,10 +24,10 @@ Komponenten, Instanzen, Overrides, Komponenten-Sets, Variablen (COLOR/FLOAT/STRI
 - @open-pencil/core extrahiert in packages/core/ (keine DOM-Abhängigkeiten)
 - @open-pencil/cli mit headless .fig-Operationen (info, tree, find, export, analyze, node, pages, variables, eval)
 - `eval`-Befehl mit Figma-kompatibler Plugin API für Headless-Skripting
-- KI-Chat: OpenRouter-Direktverbindung, 75 Werkzeuge in `schema.ts`, Modellauswahl, ⌘J
-- 49 zusätzliche KI/MCP-Werkzeuge portiert von figma-use (75 gesamt)
-- MCP-Server (@open-pencil/mcp): stdio + HTTP, 75 Core-Tools + 3 Dateiverwaltungs-Tools
-- Vereinheitlichte Werkzeugdefinitionen: einmal in `schema.ts` definieren, für KI-Chat (valibot), MCP (zod), CLI (eval) adaptieren
+- KI-Chat: OpenRouter-Direktverbindung, 86 Werkzeuge in `packages/core/src/tools/`, Modellauswahl, ⌘J
+- 60 zusätzliche KI/MCP-Werkzeuge portiert von figma-use (86 gesamt)
+- MCP-Server (@open-pencil/mcp): stdio + HTTP, 86 Core-Tools + 3 Dateiverwaltungs-Tools
+- Vereinheitlichte Werkzeugdefinitionen: einmal in `packages/core/src/tools/` definieren, für KI-Chat (valibot), MCP (zod), CLI (eval) adaptieren
 - App-Menüleiste für Browser-Modus (Datei, Bearbeiten, Ansicht, Objekt, Text, Anordnen)
 - Automatisches Speichern: 3s Debounce nach letzter Szenenänderung
 - Multi-Selektion-Eigenschaftspanel mit gemeinsamen/gemischten Werten

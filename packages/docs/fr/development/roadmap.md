@@ -24,10 +24,10 @@ Composants, instances, surcharges, jeux de composants, variables (COLOR/FLOAT/ST
 - @open-pencil/core extrait dans packages/core/ (aucune dépendance DOM)
 - @open-pencil/cli avec opérations headless .fig (info, tree, find, export, analyze, eval)
 - Commande `eval` avec API Plugin compatible Figma
-- Chat IA : connexion directe OpenRouter, 75 outils dans `schema.ts`, ⌘J
-- 49 outils IA/MCP additionnels portés depuis figma-use (75 au total)
-- Serveur MCP (@open-pencil/mcp) : stdio + HTTP, 75 outils core + 3 gestion de fichiers
-- Définitions d'outils unifiées : définir une fois dans `schema.ts`, adapter pour chat IA (valibot), MCP (zod), CLI (eval)
+- Chat IA : connexion directe OpenRouter, 86 outils dans `tools/`, ⌘J
+- 60 outils IA/MCP additionnels portés depuis figma-use (86 au total)
+- Serveur MCP (@open-pencil/mcp) : stdio + HTTP, 86 outils core + 3 gestion de fichiers
+- Définitions d'outils unifiées : définir une fois dans `tools/`, adapter pour chat IA (valibot), MCP (zod), CLI (eval)
 - Barre de menus pour le mode navigateur
 - Sauvegarde automatique : écriture avec debounce de 3s
 - Panneau de propriétés multi-sélection avec valeurs partagées/mixtes

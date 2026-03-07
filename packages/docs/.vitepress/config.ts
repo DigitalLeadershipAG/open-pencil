@@ -25,6 +25,22 @@ interface SidebarLabels {
   figmaMatrix: string
 }
 
+interface ReferenceLabels {
+  keyboardShortcuts: string
+  nodeTypes: string
+  mcpTools: string
+  sceneGraph: string
+  fileFormat: string
+  evalCommand: string
+}
+
+interface DevelopmentLabels {
+  contributing: string
+  testing: string
+  openspec: string
+  roadmap: string
+}
+
 interface NavLabels {
   userGuide: string
   reference: string
@@ -80,64 +96,99 @@ const guideSidebar = (prefix: string, l: SidebarLabels): DefaultTheme.SidebarIte
   },
 ]
 
-const referenceSidebar = (prefix: string, label: string): DefaultTheme.SidebarItem[] => [
+const referenceSidebar = (prefix: string, label: string, l: ReferenceLabels): DefaultTheme.SidebarItem[] => [
   {
     text: label,
     items: [
-      { text: 'Keyboard Shortcuts', link: `${prefix}/reference/keyboard-shortcuts` },
-      { text: 'Node Types', link: `${prefix}/reference/node-types` },
-      { text: 'MCP Tools', link: `${prefix}/reference/mcp-tools` },
-      { text: 'Scene Graph', link: `${prefix}/reference/scene-graph` },
-      { text: 'File Format', link: `${prefix}/reference/file-format` },
-      { text: 'Eval Command', link: `${prefix}/eval-command` },
+      { text: l.keyboardShortcuts, link: `${prefix}/reference/keyboard-shortcuts` },
+      { text: l.nodeTypes, link: `${prefix}/reference/node-types` },
+      { text: l.mcpTools, link: `${prefix}/reference/mcp-tools` },
+      { text: l.sceneGraph, link: `${prefix}/reference/scene-graph` },
+      { text: l.fileFormat, link: `${prefix}/reference/file-format` },
+      { text: l.evalCommand, link: `${prefix}/eval-command` },
     ],
   },
 ]
 
-const developmentSidebar = (prefix: string, label: string): DefaultTheme.SidebarItem[] => [
+const developmentSidebar = (prefix: string, label: string, l: DevelopmentLabels): DefaultTheme.SidebarItem[] => [
   {
     text: label,
     items: [
-      { text: 'Contributing', link: `${prefix}/development/contributing` },
-      { text: 'Testing', link: `${prefix}/development/testing` },
-      { text: 'OpenSpec', link: `${prefix}/development/openspec` },
-      { text: 'Roadmap', link: `${prefix}/development/roadmap` },
+      { text: l.contributing, link: `${prefix}/development/contributing` },
+      { text: l.testing, link: `${prefix}/development/testing` },
+      { text: l.openspec, link: `${prefix}/development/openspec` },
+      { text: l.roadmap, link: `${prefix}/development/roadmap` },
     ],
   },
 ]
+
+interface LocaleLabels {
+  nav: NavLabels
+  sidebar: SidebarLabels
+  reference: ReferenceLabels
+  development: DevelopmentLabels
+}
 
 const localeThemeConfig = (
   prefix: string,
-  nav: NavLabels,
-  sidebar: SidebarLabels,
+  l: LocaleLabels,
 ): DefaultTheme.Config => ({
   nav: [
-    { text: nav.userGuide, link: `${prefix}/user-guide/` },
-    { text: nav.reference, link: `${prefix}/reference/keyboard-shortcuts` },
-    { text: nav.development, link: `${prefix}/development/contributing` },
-    { text: nav.openApp, link: 'https://app.openpencil.dev' },
+    { text: l.nav.userGuide, link: `${prefix}/user-guide/` },
+    { text: l.nav.reference, link: `${prefix}/reference/keyboard-shortcuts` },
+    { text: l.nav.development, link: `${prefix}/development/contributing` },
+    { text: l.nav.openApp, link: 'https://app.openpencil.dev' },
   ],
   sidebar: {
-    [`${prefix}/user-guide/`]: userGuideSidebar(prefix, sidebar),
-    [`${prefix}/reference/`]: referenceSidebar(prefix, nav.reference),
+    [`${prefix}/user-guide/`]: userGuideSidebar(prefix, l.sidebar),
+    [`${prefix}/reference/`]: referenceSidebar(prefix, l.nav.reference, l.reference),
     [`${prefix}/`]: [
-      ...guideSidebar(prefix, sidebar),
-      ...developmentSidebar(prefix, nav.development),
+      ...guideSidebar(prefix, l.sidebar),
+      ...developmentSidebar(prefix, l.nav.development, l.development),
     ],
   },
 })
 
-const EN: SidebarLabels = { gettingAround: 'Getting Around', creatingContent: 'Creating Content', organizing: 'Organizing & Managing', advanced: 'Advanced Features', canvasNav: 'Canvas Navigation', selection: 'Selection & Manipulation', shapes: 'Drawing Shapes', text: 'Text Editing', pen: 'Pen Tool', layers: 'Layers & Pages', contextMenu: 'Context Menu', exporting: 'Exporting', autoLayout: 'Auto Layout', components: 'Components', variables: 'Variables', guide: 'Guide', gettingStarted: 'Getting Started', features: 'Features', architecture: 'Architecture', techStack: 'Tech Stack', comparison: 'Comparison', figmaMatrix: 'Figma Feature Matrix' }
+const EN_SIDEBAR: SidebarLabels = { gettingAround: 'Getting Around', creatingContent: 'Creating Content', organizing: 'Organizing & Managing', advanced: 'Advanced Features', canvasNav: 'Canvas Navigation', selection: 'Selection & Manipulation', shapes: 'Drawing Shapes', text: 'Text Editing', pen: 'Pen Tool', layers: 'Layers & Pages', contextMenu: 'Context Menu', exporting: 'Exporting', autoLayout: 'Auto Layout', components: 'Components', variables: 'Variables', guide: 'Guide', gettingStarted: 'Getting Started', features: 'Features', architecture: 'Architecture', techStack: 'Tech Stack', comparison: 'Comparison', figmaMatrix: 'Figma Feature Matrix' }
 
-const DE: SidebarLabels = { gettingAround: 'Erste Schritte', creatingContent: 'Inhalte erstellen', organizing: 'Organisieren', advanced: 'Erweitert', canvasNav: 'Canvas-Navigation', selection: 'Auswahl & Bearbeitung', shapes: 'Formen zeichnen', text: 'Textbearbeitung', pen: 'Stiftwerkzeug', layers: 'Ebenen & Seiten', contextMenu: 'Kontextmenü', exporting: 'Exportieren', autoLayout: 'Auto-Layout', components: 'Komponenten', variables: 'Variablen', guide: 'Anleitung', gettingStarted: 'Erste Schritte', features: 'Funktionen', architecture: 'Architektur', techStack: 'Tech-Stack', comparison: 'Vergleich', figmaMatrix: 'Figma-Funktionsmatrix' }
+const EN_REF: ReferenceLabels = { keyboardShortcuts: 'Keyboard Shortcuts', nodeTypes: 'Node Types', mcpTools: 'MCP Tools', sceneGraph: 'Scene Graph', fileFormat: 'File Format', evalCommand: 'Eval Command' }
 
-const IT: SidebarLabels = { gettingAround: 'Orientamento', creatingContent: 'Creazione contenuti', organizing: 'Organizzazione', advanced: 'Avanzate', canvasNav: 'Navigazione canvas', selection: 'Selezione e manipolazione', shapes: 'Disegno forme', text: 'Modifica testo', pen: 'Strumento penna', layers: 'Livelli e pagine', contextMenu: 'Menu contestuale', exporting: 'Esportazione', autoLayout: 'Auto-layout', components: 'Componenti', variables: 'Variabili', guide: 'Guida', gettingStarted: 'Per iniziare', features: 'Funzionalità', architecture: 'Architettura', techStack: 'Stack tecnologico', comparison: 'Confronto', figmaMatrix: 'Matrice funzionalità Figma' }
+const EN_DEV: DevelopmentLabels = { contributing: 'Contributing', testing: 'Testing', openspec: 'OpenSpec', roadmap: 'Roadmap' }
 
-const FR: SidebarLabels = { gettingAround: 'Prise en main', creatingContent: 'Création de contenu', organizing: 'Organisation', advanced: 'Avancé', canvasNav: 'Navigation sur le canevas', selection: 'Sélection et manipulation', shapes: 'Dessiner des formes', text: 'Édition de texte', pen: 'Outil plume', layers: 'Calques et pages', contextMenu: 'Menu contextuel', exporting: 'Exportation', autoLayout: 'Mise en page auto', components: 'Composants', variables: 'Variables', guide: 'Guide', gettingStarted: 'Premiers pas', features: 'Fonctionnalités', architecture: 'Architecture', techStack: 'Stack technique', comparison: 'Comparaison', figmaMatrix: 'Matrice des fonctionnalités Figma' }
+const DE: LocaleLabels = {
+  nav: { userGuide: 'Benutzerhandbuch', reference: 'Referenz', development: 'Entwicklung', openApp: 'App öffnen' },
+  sidebar: { gettingAround: 'Erste Schritte', creatingContent: 'Inhalte erstellen', organizing: 'Organisieren', advanced: 'Erweitert', canvasNav: 'Canvas-Navigation', selection: 'Auswahl & Bearbeitung', shapes: 'Formen zeichnen', text: 'Textbearbeitung', pen: 'Stiftwerkzeug', layers: 'Ebenen & Seiten', contextMenu: 'Kontextmenü', exporting: 'Exportieren', autoLayout: 'Auto-Layout', components: 'Komponenten', variables: 'Variablen', guide: 'Anleitung', gettingStarted: 'Erste Schritte', features: 'Funktionen', architecture: 'Architektur', techStack: 'Tech-Stack', comparison: 'Vergleich', figmaMatrix: 'Figma-Funktionsmatrix' },
+  reference: { keyboardShortcuts: 'Tastenkürzel', nodeTypes: 'Knotentypen', mcpTools: 'MCP-Tools', sceneGraph: 'Szenengraph', fileFormat: 'Dateiformat', evalCommand: 'Eval-Befehl' },
+  development: { contributing: 'Mitwirken', testing: 'Testen', openspec: 'OpenSpec', roadmap: 'Roadmap' },
+}
 
-const ES: SidebarLabels = { gettingAround: 'Orientación', creatingContent: 'Crear contenido', organizing: 'Organizar', advanced: 'Avanzado', canvasNav: 'Navegación del lienzo', selection: 'Selección y manipulación', shapes: 'Dibujar formas', text: 'Edición de texto', pen: 'Herramienta pluma', layers: 'Capas y páginas', contextMenu: 'Menú contextual', exporting: 'Exportar', autoLayout: 'Auto-layout', components: 'Componentes', variables: 'Variables', guide: 'Guía', gettingStarted: 'Primeros pasos', features: 'Características', architecture: 'Arquitectura', techStack: 'Stack tecnológico', comparison: 'Comparación', figmaMatrix: 'Matriz de funcionalidades Figma' }
+const IT: LocaleLabels = {
+  nav: { userGuide: 'Guida utente', reference: 'Riferimento', development: 'Sviluppo', openApp: 'Apri app' },
+  sidebar: { gettingAround: 'Orientamento', creatingContent: 'Creazione contenuti', organizing: 'Organizzazione', advanced: 'Avanzate', canvasNav: 'Navigazione canvas', selection: 'Selezione e manipolazione', shapes: 'Disegno forme', text: 'Modifica testo', pen: 'Strumento penna', layers: 'Livelli e pagine', contextMenu: 'Menu contestuale', exporting: 'Esportazione', autoLayout: 'Auto-layout', components: 'Componenti', variables: 'Variabili', guide: 'Guida', gettingStarted: 'Per iniziare', features: 'Funzionalità', architecture: 'Architettura', techStack: 'Stack tecnologico', comparison: 'Confronto', figmaMatrix: 'Matrice funzionalità Figma' },
+  reference: { keyboardShortcuts: 'Scorciatoie da tastiera', nodeTypes: 'Tipi di nodo', mcpTools: 'Strumenti MCP', sceneGraph: 'Grafo della scena', fileFormat: 'Formato file', evalCommand: 'Comando Eval' },
+  development: { contributing: 'Contribuire', testing: 'Test', openspec: 'OpenSpec', roadmap: 'Roadmap' },
+}
 
-const PL: SidebarLabels = { gettingAround: 'Nawigacja', creatingContent: 'Tworzenie treści', organizing: 'Organizacja', advanced: 'Zaawansowane', canvasNav: 'Nawigacja po płótnie', selection: 'Zaznaczanie i edycja', shapes: 'Rysowanie kształtów', text: 'Edycja tekstu', pen: 'Narzędzie pióro', layers: 'Warstwy i strony', contextMenu: 'Menu kontekstowe', exporting: 'Eksportowanie', autoLayout: 'Auto-layout', components: 'Komponenty', variables: 'Zmienne', guide: 'Przewodnik', gettingStarted: 'Rozpoczęcie pracy', features: 'Funkcje', architecture: 'Architektura', techStack: 'Stack technologiczny', comparison: 'Porównanie', figmaMatrix: 'Matryca funkcji Figma' }
+const FR: LocaleLabels = {
+  nav: { userGuide: 'Guide utilisateur', reference: 'Référence', development: 'Développement', openApp: "Ouvrir l'app" },
+  sidebar: { gettingAround: 'Prise en main', creatingContent: 'Création de contenu', organizing: 'Organisation', advanced: 'Avancé', canvasNav: 'Navigation sur le canevas', selection: 'Sélection et manipulation', shapes: 'Dessiner des formes', text: 'Édition de texte', pen: 'Outil plume', layers: 'Calques et pages', contextMenu: 'Menu contextuel', exporting: 'Exportation', autoLayout: 'Mise en page auto', components: 'Composants', variables: 'Variables', guide: 'Guide', gettingStarted: 'Premiers pas', features: 'Fonctionnalités', architecture: 'Architecture', techStack: 'Stack technique', comparison: 'Comparaison', figmaMatrix: 'Matrice des fonctionnalités Figma' },
+  reference: { keyboardShortcuts: 'Raccourcis clavier', nodeTypes: 'Types de nœuds', mcpTools: 'Outils MCP', sceneGraph: 'Graphe de scène', fileFormat: 'Format de fichier', evalCommand: 'Commande Eval' },
+  development: { contributing: 'Contribuer', testing: 'Tests', openspec: 'OpenSpec', roadmap: 'Feuille de route' },
+}
+
+const ES: LocaleLabels = {
+  nav: { userGuide: 'Guía del usuario', reference: 'Referencia', development: 'Desarrollo', openApp: 'Abrir app' },
+  sidebar: { gettingAround: 'Orientación', creatingContent: 'Crear contenido', organizing: 'Organizar', advanced: 'Avanzado', canvasNav: 'Navegación del lienzo', selection: 'Selección y manipulación', shapes: 'Dibujar formas', text: 'Edición de texto', pen: 'Herramienta pluma', layers: 'Capas y páginas', contextMenu: 'Menú contextual', exporting: 'Exportar', autoLayout: 'Auto-layout', components: 'Componentes', variables: 'Variables', guide: 'Guía', gettingStarted: 'Primeros pasos', features: 'Características', architecture: 'Arquitectura', techStack: 'Stack tecnológico', comparison: 'Comparación', figmaMatrix: 'Matriz de funcionalidades Figma' },
+  reference: { keyboardShortcuts: 'Atajos de teclado', nodeTypes: 'Tipos de nodo', mcpTools: 'Herramientas MCP', sceneGraph: 'Grafo de escena', fileFormat: 'Formato de archivo', evalCommand: 'Comando Eval' },
+  development: { contributing: 'Contribuir', testing: 'Pruebas', openspec: 'OpenSpec', roadmap: 'Hoja de ruta' },
+}
+
+const PL: LocaleLabels = {
+  nav: { userGuide: 'Podręcznik', reference: 'Referencja', development: 'Rozwój', openApp: 'Otwórz app' },
+  sidebar: { gettingAround: 'Nawigacja', creatingContent: 'Tworzenie treści', organizing: 'Organizacja', advanced: 'Zaawansowane', canvasNav: 'Nawigacja po płótnie', selection: 'Zaznaczanie i edycja', shapes: 'Rysowanie kształtów', text: 'Edycja tekstu', pen: 'Narzędzie pióro', layers: 'Warstwy i strony', contextMenu: 'Menu kontekstowe', exporting: 'Eksportowanie', autoLayout: 'Auto-layout', components: 'Komponenty', variables: 'Zmienne', guide: 'Przewodnik', gettingStarted: 'Rozpoczęcie pracy', features: 'Funkcje', architecture: 'Architektura', techStack: 'Stack technologiczny', comparison: 'Porównanie', figmaMatrix: 'Matryca funkcji Figma' },
+  reference: { keyboardShortcuts: 'Skróty klawiszowe', nodeTypes: 'Typy węzłów', mcpTools: 'Narzędzia MCP', sceneGraph: 'Graf sceny', fileFormat: 'Format pliku', evalCommand: 'Polecenie Eval' },
+  development: { contributing: 'Współpraca', testing: 'Testowanie', openspec: 'OpenSpec', roadmap: 'Plan rozwoju' },
+}
 
 const BASE = 'https://openpencil.dev'
 
@@ -195,7 +246,7 @@ export default defineConfig({
   transformPageData(pageData) {
     const rel = pageData.relativePath
 
-    const localeKey = (LOCALE_PREFIXES.find((p) => rel.startsWith(p + '/')) as string) ?? 'en'
+    const localeKey = LOCALE_PREFIXES.find((p) => rel.startsWith(p + '/')) ?? 'en'
     const locale = LOCALES[localeKey]
 
     const slug = rel
@@ -248,31 +299,31 @@ export default defineConfig({
       label: 'Deutsch',
       lang: 'de',
       description: 'Open-Source, KI-nativer Design-Editor. Figma-Alternative.',
-      themeConfig: localeThemeConfig('/de', { userGuide: 'Benutzerhandbuch', reference: 'Referenz', development: 'Entwicklung', openApp: 'App öffnen' }, DE),
+      themeConfig: localeThemeConfig('/de', DE),
     },
     it: {
       label: 'Italiano',
       lang: 'it',
       description: 'Editor di design open-source, IA-nativo. Alternativa a Figma.',
-      themeConfig: localeThemeConfig('/it', { userGuide: 'Guida utente', reference: 'Riferimento', development: 'Sviluppo', openApp: 'Apri app' }, IT),
+      themeConfig: localeThemeConfig('/it', IT),
     },
     fr: {
       label: 'Français',
       lang: 'fr',
       description: 'Éditeur de design open-source, IA-natif. Alternative à Figma.',
-      themeConfig: localeThemeConfig('/fr', { userGuide: 'Guide utilisateur', reference: 'Référence', development: 'Développement', openApp: "Ouvrir l'app" }, FR),
+      themeConfig: localeThemeConfig('/fr', FR),
     },
     es: {
       label: 'Español',
       lang: 'es',
       description: 'Editor de diseño open-source, IA-nativo. Alternativa a Figma.',
-      themeConfig: localeThemeConfig('/es', { userGuide: 'Guía del usuario', reference: 'Referencia', development: 'Desarrollo', openApp: 'Abrir app' }, ES),
+      themeConfig: localeThemeConfig('/es', ES),
     },
     pl: {
       label: 'Polski',
       lang: 'pl',
       description: "Open-source'owy edytor graficzny z natywnym AI. Alternatywa dla Figmy.",
-      themeConfig: localeThemeConfig('/pl', { userGuide: 'Podręcznik', reference: 'Referencja', development: 'Rozwój', openApp: 'Otwórz app' }, PL),
+      themeConfig: localeThemeConfig('/pl', PL),
     },
   },
 
@@ -287,38 +338,18 @@ export default defineConfig({
     ],
 
     sidebar: {
-      '/user-guide/': userGuideSidebar('', EN),
-      '/reference/': [
-        {
-          text: 'Reference',
-          items: [
-            { text: 'Keyboard Shortcuts', link: '/reference/keyboard-shortcuts' },
-            { text: 'Node Types', link: '/reference/node-types' },
-            { text: 'MCP Tools', link: '/reference/mcp-tools' },
-            { text: 'Scene Graph', link: '/reference/scene-graph' },
-            { text: 'File Format', link: '/reference/file-format' },
-            { text: 'Eval Command', link: '/eval-command' },
-          ],
-        },
-      ],
+      '/user-guide/': userGuideSidebar('', EN_SIDEBAR),
+      '/reference/': referenceSidebar('', 'Reference', EN_REF),
       '/': [
-        ...guideSidebar('', EN),
-        {
-          text: 'Development',
-          items: [
-            { text: 'Contributing', link: '/development/contributing' },
-            { text: 'Testing', link: '/development/testing' },
-            { text: 'OpenSpec Workflow', link: '/development/openspec' },
-            { text: 'Roadmap', link: '/development/roadmap' },
-          ],
-        },
+        ...guideSidebar('', EN_SIDEBAR),
+        ...developmentSidebar('', 'Development', EN_DEV),
       ],
     },
 
     socialLinks: [{ icon: 'github', link: 'https://github.com/open-pencil/open-pencil' }],
 
     editLink: {
-      pattern: 'https://github.com/open-pencil/open-pencil/edit/main/packages/docs/:path',
+      pattern: 'https://github.com/open-pencil/open-pencil/edit/master/packages/docs/:path',
     },
 
     footer: {
