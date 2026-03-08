@@ -119,7 +119,13 @@ export function useKeyboard() {
         store.redoAction()
       } else if (e.key === '0') {
         e.preventDefault()
+        store.zoomTo100()
+      } else if (e.key === '1') {
+        e.preventDefault()
         store.zoomToFit()
+      } else if (e.key === '2') {
+        e.preventDefault()
+        store.zoomToSelection()
       } else if (e.key === 'd') {
         e.preventDefault()
         store.duplicateSelected()
@@ -142,6 +148,17 @@ export function useKeyboard() {
         e.preventDefault()
         store.ungroupSelected()
       }
+    }
+
+    if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.code === 'Digit1') {
+      e.preventDefault()
+      store.zoomToFit()
+      return
+    }
+    if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.code === 'Digit2') {
+      e.preventDefault()
+      store.zoomToSelection()
+      return
     }
 
     if (e.shiftKey && e.key === 'A') {
