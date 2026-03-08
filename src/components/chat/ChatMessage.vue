@@ -16,8 +16,13 @@ function toolDisplayName(part: ToolPart): string {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function hasErrorOutput(part: ToolPart): boolean {
+  return part.state === 'output-available' &&
+    typeof part.output === 'object' && part.output !== null && 'error' in part.output
+}
+
 function toolState(part: ToolPart): 'pending' | 'done' | 'error' {
-  if (part.state === 'output-error') return 'error'
+  if (part.state === 'output-error' || hasErrorOutput(part)) return 'error'
   if (part.state === 'output-available') return 'done'
   return 'pending'
 }
@@ -87,7 +92,9 @@ function partKey(part: UIMessagePart, index: number): string {
                 <pre class="mt-1 overflow-x-auto rounded bg-input p-2 text-muted">{{
                   part.state === 'output-error' && part.errorText
                     ? part.errorText
-                    : JSON.stringify(part.output, null, 2)
+                    : hasErrorOutput(part)
+                      ? (part.output as { error: string }).error
+                      : JSON.stringify(part.output, null, 2)
                 }}</pre>
               </CollapsibleContent>
             </CollapsibleRoot>
