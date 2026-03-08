@@ -58,7 +58,7 @@ const providerId = useLocalStorage<AIProviderId>(
 const apiKeyStorageKey = computed(() => keyStorageKey(providerId.value))
 const apiKey = useLocalStorage(apiKeyStorageKey, '')
 const modelId = useLocalStorage(`${STORAGE_PREFIX}ai-model`, DEFAULT_AI_MODEL)
-const customBaseUrl = useLocalStorage(`${STORAGE_PREFIX}ai-base-url`, '')
+const customBaseURL = useLocalStorage(`${STORAGE_PREFIX}ai-base-url`, '')
 const customModelId = useLocalStorage(`${STORAGE_PREFIX}ai-custom-model`, '')
 const activeTab = ref<'design' | 'ai'>('design')
 
@@ -68,7 +68,7 @@ const providerDef = computed(
 
 const isConfigured = computed(() => {
   if (!apiKey.value) return false
-  if (providerId.value === 'openai-compatible' && !customBaseUrl.value) return false
+  if (providerId.value === 'openai-compatible' && !customBaseURL.value) return false
   return true
 })
 
@@ -118,7 +118,7 @@ function createModel(): LanguageModel {
     case 'openai-compatible': {
       const custom = createOpenAI({
         apiKey: key,
-        baseURL: customBaseUrl.value
+        baseURL: customBaseURL.value
       })
       return custom(effectiveModelId)
     }
@@ -171,7 +171,7 @@ export function useAIChat() {
     apiKey,
     setApiKey,
     modelId,
-    customBaseUrl,
+    customBaseURL,
     customModelId,
     activeTab,
     isConfigured,

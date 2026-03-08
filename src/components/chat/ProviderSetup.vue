@@ -5,17 +5,17 @@ import ProviderSelect from '@/components/chat/ProviderSelect.vue'
 import { uiInput } from '@/components/ui/input'
 import { useAIChat } from '@/composables/use-chat'
 
-const { providerId, providerDef, setApiKey, customBaseUrl, customModelId } = useAIChat()
+const { providerId, providerDef, setApiKey, customBaseURL, customModelId } = useAIChat()
 
 const keyInput = ref('')
-const baseUrlInput = ref(customBaseUrl.value)
+const baseURLInput = ref(customBaseURL.value)
 const customModelInput = ref(customModelId.value)
 
 function save() {
   const key = keyInput.value.trim()
   if (!key) return
-  if (providerDef.value.supportsCustomBaseUrl) {
-    customBaseUrl.value = baseUrlInput.value.trim()
+  if (providerDef.value.supportsCustomBaseURL) {
+    customBaseURL.value = baseURLInput.value.trim()
   }
   if (providerDef.value.supportsCustomModel) {
     customModelId.value = customModelInput.value.trim()
@@ -41,8 +41,8 @@ function save() {
 
     <!-- Base URL (OpenAI-compatible only) -->
     <input
-      v-if="providerDef.supportsCustomBaseUrl"
-      v-model="baseUrlInput"
+      v-if="providerDef.supportsCustomBaseURL"
+      v-model="baseURLInput"
       type="text"
       data-test-id="provider-base-url"
       placeholder="Base URL (e.g. http://localhost:11434/v1)"
@@ -79,8 +79,8 @@ function save() {
     </form>
 
     <a
-      v-if="providerDef.keyUrl"
-      :href="providerDef.keyUrl"
+      v-if="providerDef.keyURL"
+      :href="providerDef.keyURL"
       target="_blank"
       data-test-id="api-key-get-link"
       class="text-[10px] text-muted underline hover:text-surface"

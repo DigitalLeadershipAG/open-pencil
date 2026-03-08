@@ -104,10 +104,10 @@ export interface AIProviderDef {
   id: AIProviderId
   name: string
   keyPlaceholder: string
-  keyUrl: string
+  keyURL: string
   models: ModelOption[]
   defaultModel: string
-  supportsCustomBaseUrl?: boolean
+  supportsCustomBaseURL?: boolean
   supportsCustomModel?: boolean
 }
 
@@ -116,7 +116,7 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'openrouter',
     name: 'OpenRouter',
     keyPlaceholder: 'sk-or-…',
-    keyUrl: 'https://openrouter.ai/keys',
+    keyURL: 'https://openrouter.ai/keys',
     defaultModel: 'anthropic/claude-sonnet-4.6',
     models: [
       { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', tag: 'Best for design' },
@@ -139,7 +139,7 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'anthropic',
     name: 'Anthropic',
     keyPlaceholder: 'sk-ant-…',
-    keyUrl: 'https://console.anthropic.com/settings/keys',
+    keyURL: 'https://console.anthropic.com/settings/keys',
     defaultModel: 'claude-sonnet-4-6-20260301',
     models: [
       { id: 'claude-sonnet-4-6-20260301', name: 'Claude Sonnet 4.6', tag: 'Best for design' },
@@ -150,7 +150,7 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'openai',
     name: 'OpenAI',
     keyPlaceholder: 'sk-…',
-    keyUrl: 'https://platform.openai.com/api-keys',
+    keyURL: 'https://platform.openai.com/api-keys',
     defaultModel: 'gpt-5.3-codex',
     models: [
       { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex' },
@@ -163,7 +163,7 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'google',
     name: 'Google AI',
     keyPlaceholder: 'AIza…',
-    keyUrl: 'https://aistudio.google.com/apikey',
+    keyURL: 'https://aistudio.google.com/apikey',
     defaultModel: 'gemini-3.1-pro',
     models: [
       { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', tag: '1M context' },
@@ -174,10 +174,10 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'openai-compatible',
     name: 'OpenAI-compatible',
     keyPlaceholder: 'API key',
-    keyUrl: '',
+    keyURL: '',
     defaultModel: '',
     models: [],
-    supportsCustomBaseUrl: true,
+    supportsCustomBaseURL: true,
     supportsCustomModel: true
   }
 ]

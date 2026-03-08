@@ -16,17 +16,17 @@ import ProviderSelect from '@/components/chat/ProviderSelect.vue'
 import { uiInput } from '@/components/ui/input'
 import { useAIChat } from '@/composables/use-chat'
 
-const { providerId, providerDef, apiKey, setApiKey, customBaseUrl, customModelId } = useAIChat()
+const { providerId, providerDef, apiKey, setApiKey, customBaseURL, customModelId } = useAIChat()
 
 const keyInput = ref('')
-const baseUrlInput = ref(customBaseUrl.value)
+const baseURLInput = ref(customBaseURL.value)
 const customModelInput = ref(customModelId.value)
 const hasExistingKey = ref(!!apiKey.value)
 
 watch(providerId, () => {
   keyInput.value = ''
   hasExistingKey.value = !!apiKey.value
-  baseUrlInput.value = customBaseUrl.value
+  baseURLInput.value = customBaseURL.value
   customModelInput.value = customModelId.value
 })
 
@@ -36,8 +36,8 @@ function save() {
     hasExistingKey.value = true
     keyInput.value = ''
   }
-  if (providerDef.value.supportsCustomBaseUrl) {
-    customBaseUrl.value = baseUrlInput.value.trim()
+  if (providerDef.value.supportsCustomBaseURL) {
+    customBaseURL.value = baseURLInput.value.trim()
   }
   if (providerDef.value.supportsCustomModel) {
     customModelId.value = customModelInput.value.trim()
@@ -87,10 +87,10 @@ function clearKey() {
           <ProviderSelect test-id="provider-settings-provider" />
 
           <!-- Base URL (OpenAI-compatible only) -->
-          <div v-if="providerDef.supportsCustomBaseUrl" class="flex flex-col gap-1">
+          <div v-if="providerDef.supportsCustomBaseURL" class="flex flex-col gap-1">
             <label class="text-[10px] text-muted">Base URL</label>
             <input
-              v-model="baseUrlInput"
+              v-model="baseURLInput"
               type="text"
               data-test-id="provider-settings-base-url"
               placeholder="http://localhost:11434/v1"
@@ -136,8 +136,8 @@ function clearKey() {
               @change="save"
             />
             <a
-              v-if="providerDef.keyUrl"
-              :href="providerDef.keyUrl"
+              v-if="providerDef.keyURL"
+              :href="providerDef.keyURL"
               target="_blank"
               class="text-[9px] text-muted underline hover:text-surface"
             >
