@@ -161,6 +161,8 @@ function buildYogaTree(graph: SceneGraph, frame: SceneNode): YogaNode {
 
     if (!child.visible) {
       yogaChild.setDisplay(Display.None)
+    } else if (child.layoutMode === 'GRID') {
+      configureChildAsGrid(yogaChild, child, frame, graph)
     } else if (child.layoutMode !== 'NONE') {
       configureChildAsAutoLayout(yogaChild, child, frame, graph)
     } else {
@@ -171,6 +173,63 @@ function buildYogaTree(graph: SceneGraph, frame: SceneNode): YogaNode {
   }
 
   return root
+}
+
+function configureChildAsGrid(
+  yogaChild: YogaNode,
+  child: SceneNode,
+  _parent: SceneNode,
+  graph: SceneGraph
+): void {
+  yogaChild.setDisplay(Display.Grid)
+  yogaChild.setWidth(child.width)
+  yogaChild.setHeight(child.height)
+
+  if (child.gridTemplateColumns.length > 0) {
+    yogaChild.setGridTemplateColumns(child.gridTemplateColumns.map(mapGridTrack))
+  }
+  if (child.gridTemplateRows.length > 0) {
+    yogaChild.setGridTemplateRows(child.gridTemplateRows.map(mapGridTrack))
+  }
+
+  yogaChild.setGap(Gutter.Column, child.gridColumnGap)
+  yogaChild.setGap(Gutter.Row, child.gridRowGap)
+
+  yogaChild.setPadding(Edge.Top, child.paddingTop)
+  yogaChild.setPadding(Edge.Right, child.paddingRight)
+  yogaChild.setPadding(Edge.Bottom, child.paddingBottom)
+  yogaChild.setPadding(Edge.Left, child.paddingLeft)
+
+  if (child.layoutGrow > 0) {
+    yogaChild.setFlexGrow(child.layoutGrow)
+  }
+  if (child.layoutAlignSelf === 'STRETCH') {
+    yogaChild.setAlignSelf(Align.Stretch)
+  }
+
+  const grandchildren = graph.getChildren(child.id)
+  for (const gc of grandchildren) {
+    if (gc.layoutPositioning === 'ABSOLUTE') continue
+    const yogaGC = Yoga.Node.create()
+    if (!gc.visible) {
+      yogaGC.setDisplay(Display.None)
+    } else {
+      const pos = gc.gridPosition
+      if (pos) {
+        yogaGC.setGridColumnStart(pos.column)
+        yogaGC.setGridColumnEndSpan(pos.columnSpan)
+        yogaGC.setGridRowStart(pos.row)
+        yogaGC.setGridRowEndSpan(pos.rowSpan)
+      }
+      if (gc.layoutGrow > 0 || gc.layoutAlignSelf === 'STRETCH') {
+        yogaGC.setFlexGrow(1)
+      } else {
+        yogaGC.setWidth(gc.width)
+        yogaGC.setHeight(gc.height)
+      }
+    }
+    yogaChild.insertChild(yogaGC, yogaChild.getChildCount())
+  }
 }
 
 function configureChildAsAutoLayout(
