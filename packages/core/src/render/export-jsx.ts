@@ -350,16 +350,10 @@ function twRounded(prefix: string, px: number): string {
   return r ? `${prefix}-${r}` : prefix
 }
 
-function gridTrackToTw(t: GridTrack): string {
-  if (t.sizing === 'FR') return t.value === 1 ? '1fr' : `${t.value}fr`
-  if (t.sizing === 'FIXED') return `${t.value}px`
-  return 'auto'
-}
-
 function gridTemplateTw(tracks: GridTrack[]): string {
   const allEqual1Fr = tracks.every((t) => t.sizing === 'FR' && t.value === 1)
   if (allEqual1Fr) return String(tracks.length)
-  return `[${tracks.map(gridTrackToTw).join('_')}]`
+  return `[${tracks.map(formatTrack).join('_')}]`
 }
 
 function collectTailwindClasses(node: SceneNode, graph: SceneGraph): string[] {

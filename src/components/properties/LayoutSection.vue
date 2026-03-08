@@ -10,8 +10,7 @@ import type {
   LayoutSizing,
   LayoutAlign,
   LayoutCounterAlign,
-  GridTrack,
-  GridTrackSizing
+  GridTrack
 } from '@open-pencil/core'
 
 const { store, node, updateProp, commitProp } = useNodeProps()
@@ -137,10 +136,10 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
 
 // --- Grid helpers ---
 
-const TRACK_SIZING_OPTIONS: { value: GridTrackSizing; label: string }[] = [
-  { value: 'FR', label: 'Fill (fr)' },
-  { value: 'FIXED', label: 'Fixed (px)' },
-  { value: 'AUTO', label: 'Auto' }
+const TRACK_SIZING_OPTIONS = [
+  { value: 'FR' as const, label: 'Fill (fr)' },
+  { value: 'FIXED' as const, label: 'Fixed (px)' },
+  { value: 'AUTO' as const, label: 'Auto' }
 ]
 
 function updateGridTrack(
