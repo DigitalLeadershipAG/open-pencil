@@ -64,53 +64,57 @@ function mapGridTrack(track: GridTrack): { type: GridTrackType; value: number } 
   }
 }
 
+function configureAsGrid(yogaNode: YogaNode, node: SceneNode): void {
+  yogaNode.setDisplay(Display.Grid)
+  yogaNode.setWidth(node.width)
+  yogaNode.setHeight(node.height)
+
+  if (node.gridTemplateColumns.length > 0) {
+    yogaNode.setGridTemplateColumns(node.gridTemplateColumns.map(mapGridTrack))
+  }
+  if (node.gridTemplateRows.length > 0) {
+    yogaNode.setGridTemplateRows(node.gridTemplateRows.map(mapGridTrack))
+  }
+
+  yogaNode.setGap(Gutter.Column, node.gridColumnGap)
+  yogaNode.setGap(Gutter.Row, node.gridRowGap)
+
+  yogaNode.setPadding(Edge.Top, node.paddingTop)
+  yogaNode.setPadding(Edge.Right, node.paddingRight)
+  yogaNode.setPadding(Edge.Bottom, node.paddingBottom)
+  yogaNode.setPadding(Edge.Left, node.paddingLeft)
+}
+
+function createGridChildNode(child: SceneNode): YogaNode {
+  const yogaChild = Yoga.Node.create()
+  if (!child.visible) {
+    yogaChild.setDisplay(Display.None)
+  } else {
+    const pos = child.gridPosition
+    if (pos) {
+      yogaChild.setGridColumnStart(pos.column)
+      yogaChild.setGridColumnEndSpan(pos.columnSpan)
+      yogaChild.setGridRowStart(pos.row)
+      yogaChild.setGridRowEndSpan(pos.rowSpan)
+    }
+    if (child.layoutGrow > 0 || child.layoutAlignSelf === 'STRETCH') {
+      yogaChild.setFlexGrow(1)
+    } else {
+      yogaChild.setWidth(child.width)
+      yogaChild.setHeight(child.height)
+    }
+  }
+  return yogaChild
+}
+
 function buildGridTree(graph: SceneGraph, frame: SceneNode): YogaNode {
   const root = Yoga.Node.create()
-  root.setDisplay(Display.Grid)
-  root.setWidth(frame.width)
-  root.setHeight(frame.height)
-
-  if (frame.gridTemplateColumns.length > 0) {
-    root.setGridTemplateColumns(frame.gridTemplateColumns.map(mapGridTrack))
-  }
-  if (frame.gridTemplateRows.length > 0) {
-    root.setGridTemplateRows(frame.gridTemplateRows.map(mapGridTrack))
-  }
-
-  root.setGap(Gutter.Column, frame.gridColumnGap)
-  root.setGap(Gutter.Row, frame.gridRowGap)
-
-  root.setPadding(Edge.Top, frame.paddingTop)
-  root.setPadding(Edge.Right, frame.paddingRight)
-  root.setPadding(Edge.Bottom, frame.paddingBottom)
-  root.setPadding(Edge.Left, frame.paddingLeft)
+  configureAsGrid(root, frame)
 
   const children = graph.getChildren(frame.id)
   for (const child of children) {
     if (child.layoutPositioning === 'ABSOLUTE') continue
-
-    const yogaChild = Yoga.Node.create()
-
-    if (!child.visible) {
-      yogaChild.setDisplay(Display.None)
-    } else {
-      const pos = child.gridPosition
-      if (pos) {
-        yogaChild.setGridColumnStart(pos.column)
-        yogaChild.setGridColumnEndSpan(pos.columnSpan)
-        yogaChild.setGridRowStart(pos.row)
-        yogaChild.setGridRowEndSpan(pos.rowSpan)
-      }
-
-      if (child.layoutGrow > 0 || child.layoutAlignSelf === 'STRETCH') {
-        yogaChild.setFlexGrow(1)
-      } else {
-        yogaChild.setWidth(child.width)
-        yogaChild.setHeight(child.height)
-      }
-    }
-
-    root.insertChild(yogaChild, root.getChildCount())
+    root.insertChild(createGridChildNode(child), root.getChildCount())
   }
 
   return root
@@ -181,24 +185,7 @@ function configureChildAsGrid(
   _parent: SceneNode,
   graph: SceneGraph
 ): void {
-  yogaChild.setDisplay(Display.Grid)
-  yogaChild.setWidth(child.width)
-  yogaChild.setHeight(child.height)
-
-  if (child.gridTemplateColumns.length > 0) {
-    yogaChild.setGridTemplateColumns(child.gridTemplateColumns.map(mapGridTrack))
-  }
-  if (child.gridTemplateRows.length > 0) {
-    yogaChild.setGridTemplateRows(child.gridTemplateRows.map(mapGridTrack))
-  }
-
-  yogaChild.setGap(Gutter.Column, child.gridColumnGap)
-  yogaChild.setGap(Gutter.Row, child.gridRowGap)
-
-  yogaChild.setPadding(Edge.Top, child.paddingTop)
-  yogaChild.setPadding(Edge.Right, child.paddingRight)
-  yogaChild.setPadding(Edge.Bottom, child.paddingBottom)
-  yogaChild.setPadding(Edge.Left, child.paddingLeft)
+  configureAsGrid(yogaChild, child)
 
   if (child.layoutGrow > 0) {
     yogaChild.setFlexGrow(child.layoutGrow)
@@ -210,25 +197,7 @@ function configureChildAsGrid(
   const grandchildren = graph.getChildren(child.id)
   for (const gc of grandchildren) {
     if (gc.layoutPositioning === 'ABSOLUTE') continue
-    const yogaGC = Yoga.Node.create()
-    if (!gc.visible) {
-      yogaGC.setDisplay(Display.None)
-    } else {
-      const pos = gc.gridPosition
-      if (pos) {
-        yogaGC.setGridColumnStart(pos.column)
-        yogaGC.setGridColumnEndSpan(pos.columnSpan)
-        yogaGC.setGridRowStart(pos.row)
-        yogaGC.setGridRowEndSpan(pos.rowSpan)
-      }
-      if (gc.layoutGrow > 0 || gc.layoutAlignSelf === 'STRETCH') {
-        yogaGC.setFlexGrow(1)
-      } else {
-        yogaGC.setWidth(gc.width)
-        yogaGC.setHeight(gc.height)
-      }
-    }
-    yogaChild.insertChild(yogaGC, yogaChild.getChildCount())
+    yogaChild.insertChild(createGridChildNode(gc), yogaChild.getChildCount())
   }
 }
 
