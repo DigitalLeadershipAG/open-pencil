@@ -98,19 +98,19 @@ function commitUniformPadding(_value: number, previous: number) {
 
 const widthSizingOptions = computed(() => {
   const options: { value: LayoutSizing; label: string }[] = [
-    { value: 'FIXED', label: `Fixed width (${Math.round(node.value.width)})` }
+    { value: 'FIXED', label: 'Fixed' }
   ]
-  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug contents' })
-  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill container' })
+  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug' })
+  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill' })
   return options
 })
 
 const heightSizingOptions = computed(() => {
   const options: { value: LayoutSizing; label: string }[] = [
-    { value: 'FIXED', label: `Fixed height (${Math.round(node.value.height)})` }
+    { value: 'FIXED', label: 'Fixed' }
   ]
-  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug contents' })
-  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill container' })
+  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug' })
+  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill' })
   return options
 })
 
@@ -270,7 +270,7 @@ function trackLabel(track: GridTrack): string {
           title="Grid layout"
           @click="store.setLayoutMode(node.id, 'GRID')"
         >
-          <icon-lucide-grid-2x2 class="size-3.5" />
+          <icon-lucide-layout-grid class="size-3.5" />
         </button>
         <button
           v-if="isFlex"
@@ -475,11 +475,11 @@ function trackLabel(track: GridTrack): string {
       <!-- Alignment (flex only) -->
       <div v-if="isFlex" class="mt-2">
         <label class="mb-1 block text-[11px] text-muted">Alignment</label>
-        <div data-test-id="layout-alignment-grid" class="grid grid-cols-3 gap-1">
+        <div data-test-id="layout-alignment-grid" class="grid w-fit grid-cols-3 gap-0.5">
           <button
             v-for="cell in ALIGN_GRID"
             :key="`${cell.primary}-${cell.counter}`"
-            class="flex aspect-square cursor-pointer items-center justify-center rounded border text-[11px]"
+            class="flex size-6 cursor-pointer items-center justify-center rounded border text-[11px]"
             :class="
               node.primaryAxisAlign === cell.primary && node.counterAxisAlign === cell.counter
                 ? 'border-accent bg-accent/10 text-accent'
