@@ -1268,7 +1268,14 @@ export class FigmaAPI {
           maxY = Math.max(maxY, b.y + b.height)
         }
         if (minX === Infinity) return
-        this._viewport = { x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom: this._viewport.zoom }
+
+        const padding = 80
+        const contentW = maxX - minX + padding * 2
+        const contentH = maxY - minY + padding * 2
+        const viewW = typeof window !== 'undefined' ? window.innerWidth : 1280
+        const viewH = typeof window !== 'undefined' ? window.innerHeight : 720
+        const zoom = Math.min(viewW / contentW, viewH / contentH, 1)
+        this._viewport = { x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom }
       }
     }
   }
