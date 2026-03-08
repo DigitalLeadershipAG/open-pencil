@@ -5,7 +5,14 @@ import AppSelect from '@/components/AppSelect.vue'
 import ScrubInput from '@/components/ScrubInput.vue'
 import { useNodeProps } from '@/composables/use-node-props'
 
-import type { SceneNode, LayoutSizing, LayoutAlign, LayoutCounterAlign } from '@open-pencil/core'
+import type {
+  SceneNode,
+  LayoutSizing,
+  LayoutAlign,
+  LayoutCounterAlign,
+  GridTrack,
+  GridTrackSizing
+} from '@open-pencil/core'
 
 const { store, node, updateProp, commitProp } = useNodeProps()
 
@@ -17,8 +24,13 @@ const isInAutoLayout = computed(() => {
   return parent ? parent.layoutMode !== 'NONE' : false
 })
 
+const isGrid = computed(() => node.value.layoutMode === 'GRID')
+const isFlex = computed(
+  () => node.value.layoutMode === 'HORIZONTAL' || node.value.layoutMode === 'VERTICAL'
+)
+
 const widthSizing = computed<LayoutSizing>(() => {
-  if (node.value.layoutMode !== 'NONE') {
+  if (isFlex.value) {
     return node.value.layoutMode === 'HORIZONTAL'
       ? node.value.primaryAxisSizing
       : node.value.counterAxisSizing
@@ -28,7 +40,7 @@ const widthSizing = computed<LayoutSizing>(() => {
 })
 
 const heightSizing = computed<LayoutSizing>(() => {
-  if (node.value.layoutMode !== 'NONE') {
+  if (isFlex.value) {
     return node.value.layoutMode === 'VERTICAL'
       ? node.value.primaryAxisSizing
       : node.value.counterAxisSizing
@@ -38,7 +50,7 @@ const heightSizing = computed<LayoutSizing>(() => {
 })
 
 function setWidthSizing(sizing: LayoutSizing) {
-  if (node.value.layoutMode !== 'NONE') {
+  if (isFlex.value) {
     if (node.value.layoutMode === 'HORIZONTAL') updateProp('primaryAxisSizing', sizing)
     else updateProp('counterAxisSizing', sizing)
   } else if (isInAutoLayout.value) {
@@ -47,7 +59,7 @@ function setWidthSizing(sizing: LayoutSizing) {
 }
 
 function setHeightSizing(sizing: LayoutSizing) {
-  if (node.value.layoutMode !== 'NONE') {
+  if (isFlex.value) {
     if (node.value.layoutMode === 'VERTICAL') updateProp('primaryAxisSizing', sizing)
     else updateProp('counterAxisSizing', sizing)
   } else if (isInAutoLayout.value) {
@@ -89,8 +101,8 @@ const widthSizingOptions = computed(() => {
   const options: { value: LayoutSizing; label: string }[] = [
     { value: 'FIXED', label: `Fixed width (${Math.round(node.value.width)})` }
   ]
-  if (node.value.layoutMode !== 'NONE') options.push({ value: 'HUG', label: 'Hug contents' })
-  if (isInAutoLayout.value) options.push({ value: 'FILL', label: 'Fill container' })
+  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug contents' })
+  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill container' })
   return options
 })
 
@@ -98,8 +110,8 @@ const heightSizingOptions = computed(() => {
   const options: { value: LayoutSizing; label: string }[] = [
     { value: 'FIXED', label: `Fixed height (${Math.round(node.value.height)})` }
   ]
-  if (node.value.layoutMode !== 'NONE') options.push({ value: 'HUG', label: 'Hug contents' })
-  if (isInAutoLayout.value) options.push({ value: 'FILL', label: 'Fill container' })
+  if (isFlex.value) options.push({ value: 'HUG', label: 'Hug contents' })
+  if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill container' })
   return options
 })
 
@@ -122,6 +134,40 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
     'Change alignment'
   )
 }
+
+// --- Grid helpers ---
+
+const TRACK_SIZING_OPTIONS: { value: GridTrackSizing; label: string }[] = [
+  { value: 'FR', label: 'Fill (fr)' },
+  { value: 'FIXED', label: 'Fixed (px)' },
+  { value: 'AUTO', label: 'Auto' }
+]
+
+function updateGridTrack(
+  prop: 'gridTemplateColumns' | 'gridTemplateRows',
+  index: number,
+  updates: Partial<GridTrack>
+) {
+  const tracks = [...node.value[prop]]
+  tracks[index] = { ...tracks[index], ...updates }
+  store.updateNodeWithUndo(node.value.id, { [prop]: tracks }, 'Change grid track')
+}
+
+function addTrack(prop: 'gridTemplateColumns' | 'gridTemplateRows') {
+  const tracks = [...node.value[prop], { sizing: 'FR' as const, value: 1 }]
+  store.updateNodeWithUndo(node.value.id, { [prop]: tracks }, 'Add grid track')
+}
+
+function removeTrack(prop: 'gridTemplateColumns' | 'gridTemplateRows', index: number) {
+  const tracks = node.value[prop].filter((_: GridTrack, i: number) => i !== index)
+  store.updateNodeWithUndo(node.value.id, { [prop]: tracks }, 'Remove grid track')
+}
+
+function trackLabel(track: GridTrack): string {
+  if (track.sizing === 'FR') return `${track.value}fr`
+  if (track.sizing === 'FIXED') return `${track.value}px`
+  return 'Auto'
+}
 </script>
 
 <template>
@@ -137,7 +183,7 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
           @commit="(v: number, p: number) => commitProp('width', v, p)"
         />
         <AppSelect
-          v-if="node.layoutMode !== 'NONE' || isInAutoLayout"
+          v-if="isFlex || isInAutoLayout"
           :model-value="widthSizing"
           :options="widthSizingOptions"
           @update:model-value="setWidthSizing"
@@ -153,7 +199,7 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
           @commit="(v: number, p: number) => commitProp('height', v, p)"
         />
         <AppSelect
-          v-if="node.layoutMode !== 'NONE' || isInAutoLayout"
+          v-if="isFlex || isInAutoLayout"
           :model-value="heightSizing"
           :options="heightSizingOptions"
           @update:model-value="setHeightSizing"
@@ -186,6 +232,7 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
     </div>
 
     <template v-if="node.layoutMode !== 'NONE'">
+      <!-- Flow direction buttons -->
       <div class="mt-1.5 flex gap-0.5">
         <button
           data-test-id="layout-direction-horizontal"
@@ -214,6 +261,20 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
           <icon-lucide-arrow-down class="size-3.5" />
         </button>
         <button
+          data-test-id="layout-direction-grid"
+          class="flex cursor-pointer items-center justify-center rounded border px-2 py-1"
+          :class="
+            isGrid
+              ? 'border-accent bg-accent/10 text-accent'
+              : 'border-border text-muted hover:bg-hover hover:text-surface'
+          "
+          title="Grid layout"
+          @click="store.setLayoutMode(node.id, 'GRID')"
+        >
+          <icon-lucide-grid-2x2 class="size-3.5" />
+        </button>
+        <button
+          v-if="isFlex"
           data-test-id="layout-direction-wrap"
           class="flex cursor-pointer items-center justify-center rounded border px-2 py-1"
           :class="
@@ -228,69 +289,192 @@ function setAlignment(primary: LayoutAlign, counter: LayoutCounterAlign) {
         </button>
       </div>
 
-      <div class="mt-2 grid grid-cols-2 gap-1.5">
-        <ScrubInput
-          data-test-id="layout-gap-input"
-          icon="Gap"
-          :model-value="Math.round(node.itemSpacing)"
-          :min="0"
-          @update:model-value="updateProp('itemSpacing', $event)"
-          @commit="(v: number, p: number) => commitProp('itemSpacing', v, p)"
-        />
+      <!-- Grid-specific controls -->
+      <template v-if="isGrid">
+        <!-- Column tracks -->
+        <div class="mt-2">
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-[11px] text-muted">Columns</label>
+            <button
+              class="cursor-pointer rounded border-none bg-transparent px-1 text-xs leading-none text-muted hover:bg-hover hover:text-surface"
+              title="Add column"
+              @click="addTrack('gridTemplateColumns')"
+            >
+              +
+            </button>
+          </div>
+          <div class="flex flex-col gap-1">
+            <div
+              v-for="(col, i) in node.gridTemplateColumns"
+              :key="i"
+              class="flex items-center gap-1"
+            >
+              <ScrubInput
+                v-if="col.sizing !== 'AUTO'"
+                class="flex-1"
+                :icon="`C${i + 1}`"
+                :model-value="col.value"
+                :min="col.sizing === 'FR' ? 1 : 0"
+                :step="col.sizing === 'FR' ? 1 : 1"
+                :suffix="col.sizing === 'FR' ? 'fr' : 'px'"
+                @update:model-value="updateGridTrack('gridTemplateColumns', i, { value: $event })"
+              />
+              <span v-else class="flex-1 px-1 text-xs text-muted">{{ trackLabel(col) }}</span>
+              <AppSelect
+                :model-value="col.sizing"
+                :options="TRACK_SIZING_OPTIONS"
+                @update:model-value="
+                  updateGridTrack('gridTemplateColumns', i, {
+                    sizing: $event,
+                    value: $event === 'FR' ? 1 : $event === 'FIXED' ? 100 : 0
+                  })
+                "
+              />
+              <button
+                v-if="node.gridTemplateColumns.length > 1"
+                class="cursor-pointer rounded border-none bg-transparent px-0.5 text-xs text-muted hover:text-surface"
+                title="Remove column"
+                @click="removeTrack('gridTemplateColumns', i)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
 
-        <template v-if="hasUniformPadding() && !showIndividualPadding">
+        <!-- Row tracks -->
+        <div class="mt-2">
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-[11px] text-muted">Rows</label>
+            <button
+              class="cursor-pointer rounded border-none bg-transparent px-1 text-xs leading-none text-muted hover:bg-hover hover:text-surface"
+              title="Add row"
+              @click="addTrack('gridTemplateRows')"
+            >
+              +
+            </button>
+          </div>
+          <div class="flex flex-col gap-1">
+            <div v-for="(row, i) in node.gridTemplateRows" :key="i" class="flex items-center gap-1">
+              <ScrubInput
+                v-if="row.sizing !== 'AUTO'"
+                class="flex-1"
+                :icon="`R${i + 1}`"
+                :model-value="row.value"
+                :min="row.sizing === 'FR' ? 1 : 0"
+                :step="row.sizing === 'FR' ? 1 : 1"
+                :suffix="row.sizing === 'FR' ? 'fr' : 'px'"
+                @update:model-value="updateGridTrack('gridTemplateRows', i, { value: $event })"
+              />
+              <span v-else class="flex-1 px-1 text-xs text-muted">{{ trackLabel(row) }}</span>
+              <AppSelect
+                :model-value="row.sizing"
+                :options="TRACK_SIZING_OPTIONS"
+                @update:model-value="
+                  updateGridTrack('gridTemplateRows', i, {
+                    sizing: $event,
+                    value: $event === 'FR' ? 1 : $event === 'FIXED' ? 100 : 0
+                  })
+                "
+              />
+              <button
+                v-if="node.gridTemplateRows.length > 1"
+                class="cursor-pointer rounded border-none bg-transparent px-0.5 text-xs text-muted hover:text-surface"
+                title="Remove row"
+                @click="removeTrack('gridTemplateRows', i)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid gaps -->
+        <div class="mt-2 grid grid-cols-2 gap-1.5">
           <ScrubInput
-            data-test-id="layout-uniform-padding-input"
-            icon="Pad"
+            icon="Col gap"
+            :model-value="Math.round(node.gridColumnGap)"
+            :min="0"
+            @update:model-value="updateProp('gridColumnGap', $event)"
+            @commit="(v: number, p: number) => commitProp('gridColumnGap', v, p)"
+          />
+          <ScrubInput
+            icon="Row gap"
+            :model-value="Math.round(node.gridRowGap)"
+            :min="0"
+            @update:model-value="updateProp('gridRowGap', $event)"
+            @commit="(v: number, p: number) => commitProp('gridRowGap', v, p)"
+          />
+        </div>
+      </template>
+
+      <!-- Flex-specific controls -->
+      <template v-if="isFlex">
+        <div class="mt-2 grid grid-cols-2 gap-1.5">
+          <ScrubInput
+            data-test-id="layout-gap-input"
+            icon="Gap"
+            :model-value="Math.round(node.itemSpacing)"
+            :min="0"
+            @update:model-value="updateProp('itemSpacing', $event)"
+            @commit="(v: number, p: number) => commitProp('itemSpacing', v, p)"
+          />
+
+          <template v-if="hasUniformPadding() && !showIndividualPadding">
+            <ScrubInput
+              data-test-id="layout-uniform-padding-input"
+              icon="Pad"
+              :model-value="Math.round(node.paddingTop)"
+              :min="0"
+              @update:model-value="setUniformPadding"
+              @commit="commitUniformPadding"
+            />
+          </template>
+          <button
+            class="rounded border border-border bg-transparent px-2 py-1 text-left text-xs text-muted hover:bg-hover hover:text-surface"
+            @click="showIndividualPadding = !showIndividualPadding"
+          >
+            {{ showIndividualPadding ? 'Uniform padding' : 'Per-side padding' }}
+          </button>
+        </div>
+      </template>
+
+      <!-- Padding (shared by both flex and grid) -->
+      <template v-if="isGrid || showIndividualPadding || !hasUniformPadding()">
+        <div class="mt-1.5 grid grid-cols-2 gap-1.5">
+          <ScrubInput
+            icon="Top"
             :model-value="Math.round(node.paddingTop)"
             :min="0"
-            @update:model-value="setUniformPadding"
-            @commit="commitUniformPadding"
+            @update:model-value="updateProp('paddingTop', $event)"
+            @commit="(v: number, p: number) => commitProp('paddingTop', v, p)"
           />
-        </template>
-        <button
-          class="rounded border border-border bg-transparent px-2 py-1 text-left text-xs text-muted hover:bg-hover hover:text-surface"
-          @click="showIndividualPadding = !showIndividualPadding"
-        >
-          {{ showIndividualPadding ? 'Uniform padding' : 'Per-side padding' }}
-        </button>
-      </div>
+          <ScrubInput
+            icon="Right"
+            :model-value="Math.round(node.paddingRight)"
+            :min="0"
+            @update:model-value="updateProp('paddingRight', $event)"
+            @commit="(v: number, p: number) => commitProp('paddingRight', v, p)"
+          />
+          <ScrubInput
+            icon="Bottom"
+            :model-value="Math.round(node.paddingBottom)"
+            :min="0"
+            @update:model-value="updateProp('paddingBottom', $event)"
+            @commit="(v: number, p: number) => commitProp('paddingBottom', v, p)"
+          />
+          <ScrubInput
+            icon="Left"
+            :model-value="Math.round(node.paddingLeft)"
+            :min="0"
+            @update:model-value="updateProp('paddingLeft', $event)"
+            @commit="(v: number, p: number) => commitProp('paddingLeft', v, p)"
+          />
+        </div>
+      </template>
 
-      <div
-        v-if="showIndividualPadding || !hasUniformPadding()"
-        class="mt-1.5 grid grid-cols-2 gap-1.5"
-      >
-        <ScrubInput
-          icon="Top"
-          :model-value="Math.round(node.paddingTop)"
-          :min="0"
-          @update:model-value="updateProp('paddingTop', $event)"
-          @commit="(v: number, p: number) => commitProp('paddingTop', v, p)"
-        />
-        <ScrubInput
-          icon="Right"
-          :model-value="Math.round(node.paddingRight)"
-          :min="0"
-          @update:model-value="updateProp('paddingRight', $event)"
-          @commit="(v: number, p: number) => commitProp('paddingRight', v, p)"
-        />
-        <ScrubInput
-          icon="Bottom"
-          :model-value="Math.round(node.paddingBottom)"
-          :min="0"
-          @update:model-value="updateProp('paddingBottom', $event)"
-          @commit="(v: number, p: number) => commitProp('paddingBottom', v, p)"
-        />
-        <ScrubInput
-          icon="Left"
-          :model-value="Math.round(node.paddingLeft)"
-          :min="0"
-          @update:model-value="updateProp('paddingLeft', $event)"
-          @commit="(v: number, p: number) => commitProp('paddingLeft', v, p)"
-        />
-      </div>
-
-      <div class="mt-2">
+      <!-- Alignment (flex only) -->
+      <div v-if="isFlex" class="mt-2">
         <label class="mb-1 block text-[11px] text-muted">Alignment</label>
         <div data-test-id="layout-alignment-grid" class="grid grid-cols-3 gap-1">
           <button

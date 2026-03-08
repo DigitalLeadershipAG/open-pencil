@@ -986,12 +986,34 @@ export function createEditorStore() {
       counterAxisSizing: node.counterAxisSizing,
       primaryAxisAlign: node.primaryAxisAlign,
       counterAxisAlign: node.counterAxisAlign,
+      gridTemplateColumns: node.gridTemplateColumns,
+      gridTemplateRows: node.gridTemplateRows,
+      gridColumnGap: node.gridColumnGap,
+      gridRowGap: node.gridRowGap,
       width: node.width,
       height: node.height
     }
 
     const updates: Partial<SceneNode> = { layoutMode: mode }
-    if (mode !== 'NONE' && node.layoutMode === 'NONE') {
+    if (mode === 'GRID' && node.layoutMode !== 'GRID') {
+      const children = graph.getChildren(id)
+      const cols = Math.max(2, Math.ceil(Math.sqrt(children.length)))
+      const rows = Math.max(1, Math.ceil(children.length / cols))
+      updates.gridTemplateColumns = Array.from({ length: cols }, () => ({
+        sizing: 'FR' as const,
+        value: 1
+      }))
+      updates.gridTemplateRows = Array.from({ length: rows }, () => ({
+        sizing: 'FR' as const,
+        value: 1
+      }))
+      updates.gridColumnGap = 0
+      updates.gridRowGap = 0
+      updates.paddingTop = 0
+      updates.paddingRight = 0
+      updates.paddingBottom = 0
+      updates.paddingLeft = 0
+    } else if (mode !== 'NONE' && node.layoutMode === 'NONE') {
       updates.itemSpacing = 0
       updates.paddingTop = 0
       updates.paddingRight = 0
