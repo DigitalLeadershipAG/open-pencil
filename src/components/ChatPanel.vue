@@ -40,7 +40,7 @@ function handleStop() {
 </script>
 
 <template>
-  <div data-test-id="chat-panel" class="flex min-w-0 flex-1 flex-col overflow-hidden">
+  <div data-test-id="chat-panel" class="flex min-w-0 flex-1 select-text flex-col overflow-hidden">
     <ProviderSetup v-if="!isConfigured" />
 
     <template v-else>
