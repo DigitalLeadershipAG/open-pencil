@@ -107,7 +107,7 @@ function chatInput() {
 }
 
 function apiKeyInput() {
-  return page.locator('input[placeholder="sk-or-…"]')
+  return page.locator('[data-test-id="api-key-input"]')
 }
 
 test('⌘J switches to AI tab', async () => {
@@ -121,10 +121,10 @@ test('⌘J switches back to Design tab', async () => {
   await expect(designTab()).toHaveAttribute('data-state', 'active')
 })
 
-test('clicking AI tab shows API key setup when no key set', async () => {
+test('clicking AI tab shows provider setup when no key set', async () => {
   await chatTab().click()
   await expect(apiKeyInput()).toBeVisible()
-  await expect(page.getByText('Enter your OpenRouter API key')).toBeVisible()
+  await expect(page.getByText('Connect an AI provider to start chatting.')).toBeVisible()
 })
 
 test('saving API key shows chat interface', async () => {

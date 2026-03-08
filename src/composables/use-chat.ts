@@ -1,3 +1,6 @@
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
 import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { DirectChatTransport, ToolLoopAgent } from 'ai'
@@ -6,15 +9,37 @@ import { computed, ref, watch } from 'vue'
 
 import { createAITools } from '@/ai/tools'
 import { useEditorStore } from '@/stores/editor'
-import { DEFAULT_AI_MODEL } from '@open-pencil/core'
+import { AI_PROVIDERS, DEFAULT_AI_MODEL, DEFAULT_AI_PROVIDER } from '@open-pencil/core'
 
-import type { UIMessage } from 'ai'
+import type { AIProviderId } from '@open-pencil/core'
+import type { LanguageModel, UIMessage } from 'ai'
 
-export { AI_MODELS as MODELS } from '@open-pencil/core'
-export type { ModelOption } from '@open-pencil/core'
+export { AI_PROVIDERS } from '@open-pencil/core'
+export type { AIProviderDef, AIProviderId, ModelOption } from '@open-pencil/core'
 
-const API_KEY_STORAGE = 'open-pencil:openrouter-api-key'
-const MODEL_STORAGE = 'open-pencil:model'
+const STORAGE_PREFIX = 'open-pencil:'
+const PROVIDER_STORAGE = `${STORAGE_PREFIX}ai-provider`
+const MODEL_STORAGE = `${STORAGE_PREFIX}ai-model`
+const BASE_URL_STORAGE = `${STORAGE_PREFIX}ai-base-url`
+const CUSTOM_MODEL_STORAGE = `${STORAGE_PREFIX}ai-custom-model`
+const LEGACY_KEY_STORAGE = `${STORAGE_PREFIX}openrouter-api-key`
+
+function keyStorageKey(providerId: AIProviderId) {
+  return `${STORAGE_PREFIX}ai-key:${providerId}`
+}
+
+function migrateLegacyStorage() {
+  const legacyKey = localStorage.getItem(LEGACY_KEY_STORAGE)
+  if (legacyKey) {
+    localStorage.setItem(keyStorageKey('openrouter'), legacyKey)
+    localStorage.removeItem(LEGACY_KEY_STORAGE)
+    if (!localStorage.getItem(PROVIDER_STORAGE)) {
+      localStorage.setItem(PROVIDER_STORAGE, 'openrouter')
+    }
+  }
+}
+
+if (typeof window !== 'undefined') migrateLegacyStorage()
 
 const SYSTEM_PROMPT = dedent`
   You are a design assistant inside OpenPencil, a Figma-like design editor.
@@ -29,23 +54,95 @@ const SYSTEM_PROMPT = dedent`
   When the user asks to create a layout, use create_shape with FRAME, then set_layout for auto-layout.
 `
 
-const apiKey = ref(localStorage.getItem(API_KEY_STORAGE) ?? '')
+const providerId = ref<AIProviderId>(
+  (localStorage.getItem(PROVIDER_STORAGE) as AIProviderId) || DEFAULT_AI_PROVIDER
+)
 const modelId = ref(localStorage.getItem(MODEL_STORAGE) ?? DEFAULT_AI_MODEL)
+const customBaseUrl = ref(localStorage.getItem(BASE_URL_STORAGE) ?? '')
+const customModelId = ref(localStorage.getItem(CUSTOM_MODEL_STORAGE) ?? '')
 const activeTab = ref<'design' | 'ai'>('design')
 
-watch(apiKey, (key) => {
-  if (key) {
-    localStorage.setItem(API_KEY_STORAGE, key)
-  } else {
-    localStorage.removeItem(API_KEY_STORAGE)
+const apiKey = computed({
+  get: () => localStorage.getItem(keyStorageKey(providerId.value)) ?? '',
+  set: (key: string) => {
+    if (key) {
+      localStorage.setItem(keyStorageKey(providerId.value), key)
+    } else {
+      localStorage.removeItem(keyStorageKey(providerId.value))
+    }
   }
 })
 
-watch(modelId, (id) => {
-  localStorage.setItem(MODEL_STORAGE, id)
+const providerDef = computed(
+  () => AI_PROVIDERS.find((p) => p.id === providerId.value) ?? AI_PROVIDERS[0]
+)
+
+const isConfigured = computed(() => {
+  if (!apiKey.value) return false
+  if (providerId.value === 'openai-compatible' && !customBaseUrl.value) return false
+  return true
 })
 
-const isConfigured = computed(() => apiKey.value.length > 0)
+watch(providerId, (id) => {
+  localStorage.setItem(PROVIDER_STORAGE, id)
+  const def = AI_PROVIDERS.find((p) => p.id === id)
+  if (def?.defaultModel) {
+    modelId.value = def.defaultModel
+  }
+  resetChat()
+})
+
+watch(modelId, (id) => localStorage.setItem(MODEL_STORAGE, id))
+watch(customBaseUrl, (url) => {
+  if (url) localStorage.setItem(BASE_URL_STORAGE, url)
+  else localStorage.removeItem(BASE_URL_STORAGE)
+})
+watch(customModelId, (id) => {
+  if (id) localStorage.setItem(CUSTOM_MODEL_STORAGE, id)
+  else localStorage.removeItem(CUSTOM_MODEL_STORAGE)
+})
+
+function setApiKey(key: string) {
+  apiKey.value = key
+}
+
+function createModel(): LanguageModel {
+  const key = apiKey.value
+  const effectiveModelId =
+    providerId.value === 'openai-compatible' ? customModelId.value : modelId.value
+
+  switch (providerId.value) {
+    case 'openrouter': {
+      const openrouter = createOpenRouter({
+        apiKey: key,
+        headers: {
+          'X-OpenRouter-Title': 'OpenPencil',
+          'HTTP-Referer': 'https://github.com/open-pencil/open-pencil'
+        }
+      })
+      return openrouter(effectiveModelId)
+    }
+    case 'anthropic': {
+      const anthropic = createAnthropic({ apiKey: key })
+      return anthropic(effectiveModelId)
+    }
+    case 'openai': {
+      const openai = createOpenAI({ apiKey: key })
+      return openai(effectiveModelId)
+    }
+    case 'google': {
+      const google = createGoogleGenerativeAI({ apiKey: key })
+      return google(effectiveModelId)
+    }
+    case 'openai-compatible': {
+      const custom = createOpenAI({
+        apiKey: key,
+        baseURL: customBaseUrl.value
+      })
+      return custom(effectiveModelId)
+    }
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only mock transports don't implement full generics
 let overrideTransport: (() => any) | null = null
@@ -55,18 +152,10 @@ let chat: Chat<UIMessage> | null = null
 function createTransport() {
   if (overrideTransport) return overrideTransport()
 
-  const openrouter = createOpenRouter({
-    apiKey: apiKey.value,
-    headers: {
-      'X-OpenRouter-Title': 'OpenPencil',
-      'HTTP-Referer': 'https://github.com/open-pencil/open-pencil'
-    }
-  })
-
   const tools = createAITools(useEditorStore())
 
   const agent = new ToolLoopAgent({
-    model: openrouter(modelId.value),
+    model: createModel(),
     instructions: SYSTEM_PROMPT,
     tools
   })
@@ -75,7 +164,7 @@ function createTransport() {
 }
 
 function ensureChat(): Chat<UIMessage> | null {
-  if (!apiKey.value) return null
+  if (!isConfigured.value) return null
   if (!chat) {
     chat = new Chat<UIMessage>({
       transport: createTransport()
@@ -96,8 +185,13 @@ if (typeof window !== 'undefined') {
 
 export function useAIChat() {
   return {
+    providerId,
+    providerDef,
     apiKey,
+    setApiKey,
     modelId,
+    customBaseUrl,
+    customModelId,
     activeTab,
     isConfigured,
     ensureChat,

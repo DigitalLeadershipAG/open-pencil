@@ -15,11 +15,12 @@ import {
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 
+import ProviderSettings from '@/components/chat/ProviderSettings.vue'
 import { uiButton } from '@/components/ui/button'
 import { selectContent, selectItem, selectTrigger } from '@/components/ui/select'
-import { MODELS, useAIChat } from '@/composables/use-chat'
+import { useAIChat } from '@/composables/use-chat'
 
-const { modelId } = useAIChat()
+const { providerId, providerDef, modelId, customModelId } = useAIChat()
 
 const props = defineProps<{
   status: 'ready' | 'submitted' | 'streaming' | 'error'
@@ -33,9 +34,12 @@ const emit = defineEmits<{
 const input = ref('')
 
 const isStreaming = computed(() => props.status === 'streaming' || props.status === 'submitted')
-const selectedModelName = computed(
-  () => MODELS.find((m) => m.id === modelId.value)?.name ?? modelId.value
-)
+const isCustomProvider = computed(() => providerId.value === 'openai-compatible')
+
+const selectedModelName = computed(() => {
+  if (isCustomProvider.value) return customModelId.value || 'No model'
+  return providerDef.value.models.find((m) => m.id === modelId.value)?.name ?? modelId.value
+})
 
 function handleSubmit(e: Event) {
   e.preventDefault()
@@ -49,9 +53,18 @@ function handleSubmit(e: Event) {
 <template>
   <TooltipProvider>
     <div class="shrink-0 border-t border-border px-3 py-2">
-      <!-- Model selector -->
-      <div class="mb-1.5 flex items-center">
-        <SelectRoot v-model="modelId">
+      <!-- Model selector & settings -->
+      <div class="mb-1.5 flex items-center gap-1">
+        <template v-if="isCustomProvider">
+          <div
+            class="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted"
+            data-test-id="chat-custom-model-label"
+          >
+            <icon-lucide-bot class="size-3" />
+            {{ selectedModelName }}
+          </div>
+        </template>
+        <SelectRoot v-else v-model="modelId">
           <SelectTrigger
             data-test-id="chat-model-selector"
             :class="
@@ -76,7 +89,7 @@ function handleSubmit(e: Event) {
             >
               <SelectViewport>
                 <SelectItem
-                  v-for="model in MODELS"
+                  v-for="model in providerDef.models"
                   :key="model.id"
                   :value="model.id"
                   :class="selectItem({ class: 'gap-2 rounded px-2 py-1.5 text-[11px]' })"
@@ -93,6 +106,10 @@ function handleSubmit(e: Event) {
             </SelectContent>
           </SelectPortal>
         </SelectRoot>
+
+        <div class="ml-auto">
+          <ProviderSettings />
+        </div>
       </div>
 
       <!-- Input form -->
