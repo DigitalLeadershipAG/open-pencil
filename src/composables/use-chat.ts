@@ -73,7 +73,9 @@ const providerDef = computed(
 
 const isConfigured = computed(() => {
   if (!apiKey.value) return false
-  if (providerID.value === 'openai-compatible' && !customBaseURL.value) return false
+  const needsBaseURL =
+    providerID.value === 'openai-compatible' || providerID.value === 'anthropic-compatible'
+  if (needsBaseURL && !customBaseURL.value) return false
   return true
 })
 
@@ -94,8 +96,9 @@ function setAPIKey(key: string) {
 
 function createModel(): LanguageModel {
   const key = apiKey.value
-  const effectiveModelID =
-    providerID.value === 'openai-compatible' ? customModelID.value : modelID.value
+  const needsCustomModel =
+    providerID.value === 'openai-compatible' || providerID.value === 'anthropic-compatible'
+  const effectiveModelID = needsCustomModel ? customModelID.value : modelID.value
 
   switch (providerID.value) {
     case 'openrouter': {
@@ -125,8 +128,18 @@ function createModel(): LanguageModel {
         apiKey: key,
         baseURL: customBaseURL.value
       })
+      return custom.chat(effectiveModelID)
+    }
+    case 'anthropic-compatible': {
+      const custom = createAnthropic({
+        apiKey: key,
+        baseURL: customBaseURL.value
+      })
       return custom(effectiveModelID)
     }
+    // exhaustiveness guard — TypeScript ensures we handle every AIProviderID
+    default:
+      throw new Error(`Unknown provider: ${providerID.value satisfies never}`)
   }
 }
 
