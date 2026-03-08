@@ -43,12 +43,17 @@ const SYSTEM_PROMPT = dedent`
   Help users create and modify designs. Be concise and direct.
   When describing changes, use specific design terminology.
 
-  Available node types: FRAME (containers/cards), RECTANGLE, ELLIPSE, TEXT, LINE, STAR, POLYGON, SECTION.
-  Colors can be hex strings (#ff0000) or RGBA objects with values 0–1.
-  Coordinates use canvas space — (0, 0) is the top-left of the page.
+  Use the render tool with JSX as the primary way to create designs.
+  JSX supports full JavaScript expressions (map, ternaries, Array.from, etc.).
+  Available tags: Frame, Text, Rectangle, Ellipse, Line, Star, Polygon, Group, Section.
+  Common props: name, w, h, x, y, bg (hex color), stroke, rounded, opacity, rotate.
+  Layout: flex="row"|"col", gap, justify, items, p, px, py, pt/pr/pb/pl, wrap.
+  Text: size, weight, color, font, textAlign.
+  Sizing: w/h accept numbers (px) or "hug"/"fill".
 
+  Colors are hex strings (#ff0000). Coordinates use canvas space — (0, 0) is top-left.
   Always use tools to make changes. After creating nodes, briefly describe what you did.
-  When the user asks to create a layout, use create_shape with FRAME, then set_layout for auto-layout.
+  Use create_shape + set_layout only for simple single nodes; prefer render for layouts.
 `
 
 const providerID = useLocalStorage<AIProviderID>(
