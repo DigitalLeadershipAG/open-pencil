@@ -271,7 +271,7 @@ function freeYogaTree(node: YogaNode): void {
   for (let i = node.getChildCount() - 1; i >= 0; i--) {
     freeYogaTree(node.getChild(i))
   }
-  node.free()
+  if ('free' in node) (node as { free(): void }).free()
 }
 
 function mapJustify(align: string): Justify {
