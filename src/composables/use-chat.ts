@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import { useLocalStorage } from '@vueuse/core'
 import { DirectChatTransport, ToolLoopAgent } from 'ai'
 import dedent from 'dedent'
 import { computed, ref, watch } from 'vue'
@@ -18,14 +19,10 @@ export { AI_PROVIDERS } from '@open-pencil/core'
 export type { AIProviderDef, AIProviderId, ModelOption } from '@open-pencil/core'
 
 const STORAGE_PREFIX = 'open-pencil:'
-const PROVIDER_STORAGE = `${STORAGE_PREFIX}ai-provider`
-const MODEL_STORAGE = `${STORAGE_PREFIX}ai-model`
-const BASE_URL_STORAGE = `${STORAGE_PREFIX}ai-base-url`
-const CUSTOM_MODEL_STORAGE = `${STORAGE_PREFIX}ai-custom-model`
 const LEGACY_KEY_STORAGE = `${STORAGE_PREFIX}openrouter-api-key`
 
-function keyStorageKey(providerId: AIProviderId) {
-  return `${STORAGE_PREFIX}ai-key:${providerId}`
+function keyStorageKey(id: string) {
+  return `${STORAGE_PREFIX}ai-key:${id}`
 }
 
 function migrateLegacyStorage() {
@@ -33,8 +30,8 @@ function migrateLegacyStorage() {
   if (legacyKey) {
     localStorage.setItem(keyStorageKey('openrouter'), legacyKey)
     localStorage.removeItem(LEGACY_KEY_STORAGE)
-    if (!localStorage.getItem(PROVIDER_STORAGE)) {
-      localStorage.setItem(PROVIDER_STORAGE, 'openrouter')
+    if (!localStorage.getItem(`${STORAGE_PREFIX}ai-provider`)) {
+      localStorage.setItem(`${STORAGE_PREFIX}ai-provider`, 'openrouter')
     }
   }
 }
@@ -54,13 +51,15 @@ const SYSTEM_PROMPT = dedent`
   When the user asks to create a layout, use create_shape with FRAME, then set_layout for auto-layout.
 `
 
-const providerId = ref<AIProviderId>(
-  (localStorage.getItem(PROVIDER_STORAGE) as AIProviderId) || DEFAULT_AI_PROVIDER
+const providerId = useLocalStorage<AIProviderId>(
+  `${STORAGE_PREFIX}ai-provider`,
+  DEFAULT_AI_PROVIDER
 )
-const apiKey = ref(localStorage.getItem(keyStorageKey(providerId.value)) ?? '')
-const modelId = ref(localStorage.getItem(MODEL_STORAGE) ?? DEFAULT_AI_MODEL)
-const customBaseUrl = ref(localStorage.getItem(BASE_URL_STORAGE) ?? '')
-const customModelId = ref(localStorage.getItem(CUSTOM_MODEL_STORAGE) ?? '')
+const apiKeyStorageKey = computed(() => keyStorageKey(providerId.value))
+const apiKey = useLocalStorage(apiKeyStorageKey, '')
+const modelId = useLocalStorage(`${STORAGE_PREFIX}ai-model`, DEFAULT_AI_MODEL)
+const customBaseUrl = useLocalStorage(`${STORAGE_PREFIX}ai-base-url`, '')
+const customModelId = useLocalStorage(`${STORAGE_PREFIX}ai-custom-model`, '')
 const activeTab = ref<'design' | 'ai'>('design')
 
 const providerDef = computed(
@@ -74,8 +73,6 @@ const isConfigured = computed(() => {
 })
 
 watch(providerId, (id) => {
-  localStorage.setItem(PROVIDER_STORAGE, id)
-  apiKey.value = localStorage.getItem(keyStorageKey(id)) ?? ''
   const def = AI_PROVIDERS.find((p) => p.id === id)
   if (def?.defaultModel) {
     modelId.value = def.defaultModel
@@ -83,29 +80,8 @@ watch(providerId, (id) => {
   resetChat()
 })
 
-watch(apiKey, (key) => {
-  if (key) {
-    localStorage.setItem(keyStorageKey(providerId.value), key)
-  } else {
-    localStorage.removeItem(keyStorageKey(providerId.value))
-  }
-})
-
-watch(modelId, (id) => {
-  localStorage.setItem(MODEL_STORAGE, id)
-  resetChat()
-})
-
-watch(customBaseUrl, (url) => {
-  if (url) localStorage.setItem(BASE_URL_STORAGE, url)
-  else localStorage.removeItem(BASE_URL_STORAGE)
-})
-
-watch(customModelId, (id) => {
-  if (id) localStorage.setItem(CUSTOM_MODEL_STORAGE, id)
-  else localStorage.removeItem(CUSTOM_MODEL_STORAGE)
-  resetChat()
-})
+watch(modelId, () => resetChat())
+watch(customModelId, () => resetChat())
 
 function setApiKey(key: string) {
   apiKey.value = key
