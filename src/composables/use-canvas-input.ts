@@ -30,7 +30,7 @@ interface DragMove {
   type: 'move'
   startX: number
   startY: number
-  originals: Map<string, { x: number; y: number }>
+  originals: Map<string, { x: number; y: number; parentId: string }>
   duplicated?: boolean
   autoLayoutParentId?: string
   brokeFromAutoLayout?: boolean
@@ -390,16 +390,17 @@ export function useCanvasInput(
           store.select([hit.id], true)
         }
 
-        const originals = new Map<string, { x: number; y: number }>()
+        const originals = new Map<string, { x: number; y: number; parentId: string }>()
         for (const id of store.state.selectedIds) {
           const n = store.graph.getNode(id)
-          if (n) originals.set(id, { x: n.x, y: n.y })
+          if (n)
+            originals.set(id, { x: n.x, y: n.y, parentId: n.parentId ?? store.state.currentPageId })
         }
 
         // Alt+drag → duplicate
         if (e.altKey && store.state.selectedIds.size > 0) {
           const newIds: string[] = []
-          const newOriginals = new Map<string, { x: number; y: number }>()
+          const newOriginals = new Map<string, { x: number; y: number; parentId: string }>()
           for (const id of store.state.selectedIds) {
             const src = store.graph.getNode(id)
             if (!src) continue
@@ -414,7 +415,12 @@ export function useCanvasInput(
               rotation: src.rotation
             })
             newIds.push(newId)
-            newOriginals.set(newId, { x: src.x, y: src.y })
+            const newNode = store.graph.getNode(newId)
+            newOriginals.set(newId, {
+              x: src.x,
+              y: src.y,
+              parentId: newNode?.parentId ?? store.state.currentPageId
+            })
           }
           store.select(newIds)
           drag.value = {
@@ -843,21 +849,16 @@ export function useCanvasInput(
         }
         store.setDropTarget(null)
       } else {
-        // Check if the user actually dragged
         const moved = [...d.originals].some(([id, orig]) => {
           const node = store.graph.getNode(id)
           return node && (node.x !== orig.x || node.y !== orig.y)
         })
 
         if (moved) {
-          store.commitMove(d.originals)
-
-          // Reparent into frame if dropped on one
           const dropId = store.state.dropTargetId
           if (dropId) {
             store.reparentNodes([...store.state.selectedIds], dropId)
           } else {
-            // Reparent to grandparent if dragged outside parent bounds
             for (const id of store.state.selectedIds) {
               const node = store.graph.getNode(id)
               if (!node?.parentId || store.isTopLevel(node.parentId)) continue
@@ -871,6 +872,7 @@ export function useCanvasInput(
               }
             }
           }
+          store.commitMoveWithReparent(d.originals)
         }
         store.setDropTarget(null)
       }
@@ -1225,8 +1227,12 @@ export function useCanvasInput(
   useEventListener(canvasRef, 'mousemove', onMouseMove)
   useEventListener(canvasRef, 'mouseup', onMouseUp)
   useEventListener(canvasRef, 'mouseleave', () => {
-    onMouseUp()
-    store.setHoveredNode(null)
+    if (!drag.value) {
+      store.setHoveredNode(null)
+    }
+  })
+  useEventListener(window, 'mouseup', () => {
+    if (drag.value) onMouseUp()
   })
   useEventListener(canvasRef, 'wheel', onWheel, { passive: false })
   useEventListener(canvasRef, 'touchstart', onTouchStart, { passive: false })

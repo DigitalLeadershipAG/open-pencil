@@ -1,0 +1,10 @@
+:9100 {
+	reverse_proxy https://ai-proxy.soldatov.dev {
+		header_up Host ai-proxy.soldatov.dev
+	}
+	header Access-Control-Allow-Origin "http://localhost:1420"
+	header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+	header Access-Control-Allow-Headers "*"
+	@options method OPTIONS
+	respond @options 204
+}

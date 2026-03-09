@@ -30,7 +30,8 @@ import {
   SceneGraph,
   setTextMeasurer,
   TextEditor,
-  UndoManager
+  UndoManager,
+  type UndoEntry
 } from '@open-pencil/core'
 import { readFigFile } from '@open-pencil/core'
 
@@ -390,7 +391,12 @@ export function createEditorStore() {
     const node = graph.getNode(nodeId)
     if (!node) return
 
-    // Convert position if coming from different parent
+    const origParentId = node.parentId ?? state.currentPageId
+    const origX = node.x
+    const origY = node.y
+    const origParent = graph.getNode(origParentId)
+    const origIndex = origParent?.childIds.indexOf(nodeId) ?? -1
+
     if (node.parentId !== parentId) {
       const absPos = graph.getAbsolutePosition(nodeId)
       const parentAbs = graph.getAbsolutePosition(parentId)
@@ -400,6 +406,34 @@ export function createEditorStore() {
     graph.reorderChild(nodeId, parentId, insertIndex)
     computeLayout(graph, parentId)
     runLayoutForNode(parentId)
+
+    undo.push({
+      label: 'Reorder',
+      forward: () => {
+        const n = graph.getNode(nodeId)
+        if (n && n.parentId !== parentId) {
+          const absPos = graph.getAbsolutePosition(nodeId)
+          const parentAbs = graph.getAbsolutePosition(parentId)
+          graph.updateNode(nodeId, { x: absPos.x - parentAbs.x, y: absPos.y - parentAbs.y })
+        }
+        graph.reorderChild(nodeId, parentId, insertIndex)
+        computeLayout(graph, parentId)
+        runLayoutForNode(parentId)
+        requestRender()
+      },
+      inverse: () => {
+        graph.reorderChild(nodeId, origParentId, origIndex >= 0 ? origIndex : 0)
+        graph.updateNode(nodeId, { x: origX, y: origY })
+        computeLayout(graph, origParentId)
+        runLayoutForNode(origParentId)
+        if (origParentId !== parentId) {
+          computeLayout(graph, parentId)
+          runLayoutForNode(parentId)
+        }
+        requestRender()
+      }
+    })
+
     requestRender()
   }
 
@@ -417,6 +451,39 @@ export function createEditorStore() {
         continue
       graph.reparentNode(id, newParentId)
     }
+    requestRender()
+  }
+
+  function reorderChildWithUndo(nodeId: string, newParentId: string, insertIndex: number) {
+    const node = graph.getNode(nodeId)
+    if (!node) return
+    const origParentId = node.parentId ?? state.currentPageId
+    const origParent = graph.getNode(origParentId)
+    const origIndex = origParent?.childIds.indexOf(nodeId) ?? 0
+    const origX = node.x
+    const origY = node.y
+
+    graph.reorderChild(nodeId, newParentId, insertIndex)
+    runLayoutForNode(newParentId)
+    if (origParentId !== newParentId) runLayoutForNode(origParentId)
+
+    undo.push({
+      label: 'Reorder',
+      forward: () => {
+        graph.reorderChild(nodeId, newParentId, insertIndex)
+        runLayoutForNode(newParentId)
+        if (origParentId !== newParentId) runLayoutForNode(origParentId)
+        requestRender()
+      },
+      inverse: () => {
+        graph.reorderChild(nodeId, origParentId, origIndex)
+        graph.updateNode(nodeId, { x: origX, y: origY })
+        runLayoutForNode(origParentId)
+        if (origParentId !== newParentId) runLayoutForNode(newParentId)
+        requestRender()
+      }
+    })
+
     requestRender()
   }
 
@@ -1980,6 +2047,38 @@ export function createEditorStore() {
     })
   }
 
+  function commitMoveWithReparent(
+    originals: Map<string, { x: number; y: number; parentId: string }>
+  ) {
+    const finals = new Map<string, { x: number; y: number; parentId: string }>()
+    for (const [id] of originals) {
+      const n = graph.getNode(id)
+      if (n) finals.set(id, { x: n.x, y: n.y, parentId: n.parentId ?? state.currentPageId })
+    }
+    for (const [id] of finals) syncIfInsideComponent(id)
+    undo.push({
+      label: 'Move',
+      forward: () => {
+        for (const [id, pos] of finals) {
+          graph.reparentNode(id, pos.parentId)
+          graph.updateNode(id, { x: pos.x, y: pos.y })
+          runLayoutForNode(id)
+        }
+        for (const [id] of finals) syncIfInsideComponent(id)
+        requestRender()
+      },
+      inverse: () => {
+        for (const [id, pos] of originals) {
+          graph.reparentNode(id, pos.parentId)
+          graph.updateNode(id, { x: pos.x, y: pos.y })
+          runLayoutForNode(id)
+        }
+        for (const [id] of originals) syncIfInsideComponent(id)
+        requestRender()
+      }
+    })
+  }
+
   function commitResize(nodeId: string, origRect: Rect) {
     const node = graph.getNode(nodeId)
     if (!node) return
@@ -2038,6 +2137,45 @@ export function createEditorStore() {
         requestRender()
       }
     })
+  }
+
+  function snapshotPage(): Map<string, SceneNode> {
+    const snapshot = new Map<string, SceneNode>()
+    const walk = (id: string) => {
+      const node = graph.getNode(id)
+      if (!node) return
+      snapshot.set(id, structuredClone(node))
+      for (const childId of node.childIds) walk(childId)
+    }
+    walk(state.currentPageId)
+    return snapshot
+  }
+
+  function restorePageFromSnapshot(snapshot: Map<string, SceneNode>) {
+    const page = graph.getNode(state.currentPageId)
+    if (!page) return
+
+    for (const childId of page.childIds.slice()) {
+      graph.deleteNode(childId)
+    }
+
+    const pageSnap = snapshot.get(state.currentPageId)
+    if (pageSnap) {
+      page.childIds = [...pageSnap.childIds]
+    }
+
+    for (const [id, snap] of snapshot) {
+      if (id === state.currentPageId) continue
+      graph.nodes.set(id, structuredClone(snap))
+    }
+
+    graph.clearAbsPosCache()
+    computeAllLayouts(graph, state.currentPageId)
+    requestRender()
+  }
+
+  function pushUndoEntry(entry: UndoEntry) {
+    undo.push(entry)
   }
 
   function undoAction() {
@@ -2171,6 +2309,7 @@ export function createEditorStore() {
     setLayoutInsertIndicator,
     reorderInAutoLayout,
     reparentNodes,
+    reorderChildWithUndo,
     penAddVertex,
     penSetDragTangent,
     penSetClosingToFirst,
@@ -2211,12 +2350,16 @@ export function createEditorStore() {
     mobilePaste,
     deleteSelected,
     commitMove,
+    commitMoveWithReparent,
     commitResize,
     commitRotation,
     commitNodeUpdate,
     updateNodeWithUndo,
     undoAction,
     redoAction,
+    snapshotPage,
+    restorePageFromSnapshot,
+    pushUndoEntry,
     screenToCanvas,
     applyZoom,
     pan,

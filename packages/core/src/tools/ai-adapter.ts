@@ -10,8 +10,8 @@ import type { ToolDef, ParamDef, ParamType } from './schema'
 
 export interface AIAdapterOptions {
   getFigma: () => FigmaAPI
-  onBeforeExecute?: () => void
-  onAfterExecute?: () => void
+  onBeforeExecute?: (def: ToolDef) => void
+  onAfterExecute?: (def: ToolDef) => void
   onFlashNodes?: (nodeIds: string[]) => void
 }
 
@@ -57,7 +57,7 @@ export function toolsToAI(
       description: def.description,
       inputSchema: valibotSchema(v.object(shape as any)),
       execute: async (args: Record<string, unknown>) => {
-        options.onBeforeExecute?.()
+        options.onBeforeExecute?.(def)
         try {
           const execResult = await def.execute(options.getFigma(), args as any)
           if (def.mutates && options.onFlashNodes) {
@@ -68,7 +68,7 @@ export function toolsToAI(
         } catch (err) {
           return { error: err instanceof Error ? err.message : String(err) }
         } finally {
-          options.onAfterExecute?.()
+          options.onAfterExecute?.(def)
         }
       }
     })

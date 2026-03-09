@@ -1,12 +1,13 @@
-import type { ComputedRef } from 'vue'
-import { computed } from 'vue'
 import { useBreakpoints, useEventListener, useMagicKeys, whenever } from '@vueuse/core'
+import { computed } from 'vue'
 
 import { useAIChat } from '@/composables/use-chat'
 import { TOOL_SHORTCUTS, useEditorStore } from '@/stores/editor'
 import { closeTab, createTab, activeTab as activeTabRef } from '@/stores/tabs'
 
 import { openFileDialog } from './use-menu'
+
+import type { ComputedRef } from 'vue'
 
 function isEditing(e: Event) {
   return e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
@@ -54,16 +55,33 @@ export function useKeyboard() {
 
       const mod = e.metaKey || e.ctrlKey
       if (mod && e.altKey && ['KeyK', 'KeyB'].includes(e.code)) e.preventDefault()
-      if (mod && e.shiftKey && ['KeyK', 'KeyH', 'KeyL', 'KeyE', 'KeyS', 'KeyG', 'KeyZ'].includes(e.code))
+      if (
+        mod &&
+        e.shiftKey &&
+        ['KeyK', 'KeyH', 'KeyL', 'KeyE', 'KeyS', 'KeyG', 'KeyZ'].includes(e.code)
+      )
         e.preventDefault()
       if (mod && !e.shiftKey && !e.altKey) {
         if (
           [
-            'Backslash', 'KeyJ', 'KeyW', 'KeyN', 'KeyT', 'KeyZ', 'KeyY',
-            'Digit0', 'Digit1', 'Digit2',
-            'KeyD', 'KeyA', 'KeyS', 'KeyO', 'KeyG'
+            'Backslash',
+            'KeyJ',
+            'KeyW',
+            'KeyN',
+            'KeyT',
+            'KeyZ',
+            'KeyY',
+            'Digit0',
+            'Digit1',
+            'Digit2',
+            'KeyD',
+            'KeyA',
+            'KeyS',
+            'KeyO',
+            'KeyG'
           ].includes(e.code)
-        ) e.preventDefault()
+        )
+          e.preventDefault()
       }
       if (!mod && e.shiftKey && ['Digit1', 'Digit2', 'KeyA'].includes(e.code)) e.preventDefault()
       if (!mod && !e.shiftKey && ['[', ']'].includes(e.key)) e.preventDefault()
@@ -100,7 +118,9 @@ export function useKeyboard() {
   whenever(mod('shift+keyz'), () => store.redoAction())
 
   // --- Mod + Key ---
-  whenever(mod('backslash'), () => { store.state.showUI = !store.state.showUI })
+  whenever(mod('backslash'), () => {
+    store.state.showUI = !store.state.showUI
+  })
   whenever(mod('keyj'), () => {
     if (isMobile.value) {
       store.state.activeRibbonTab = store.state.activeRibbonTab === 'ai' ? 'panels' : 'ai'
@@ -111,7 +131,9 @@ export function useKeyboard() {
       activeTab.value = activeTab.value === 'ai' ? 'design' : 'ai'
     }
   })
-  whenever(mod('keyw'), () => { if (activeTabRef.value) closeTab(activeTabRef.value.id) })
+  whenever(mod('keyw'), () => {
+    if (activeTabRef.value) closeTab(activeTabRef.value.id)
+  })
   whenever(mod('keyn'), () => createTab())
   whenever(mod('keyt'), () => createTab())
   whenever(mod('keyz'), () => store.undoAction())
@@ -149,8 +171,12 @@ export function useKeyboard() {
   // --- Plain keys (no modifiers) ---
   function plain(key: string): ComputedRef<boolean> {
     return computed(
-      () => keys[key].value && !keys['meta'].value && !keys['control'].value
-        && !keys['shift'].value && !keys['alt'].value
+      () =>
+        keys[key].value &&
+        !keys['meta'].value &&
+        !keys['control'].value &&
+        !keys['shift'].value &&
+        !keys['alt'].value
     )
   }
 
