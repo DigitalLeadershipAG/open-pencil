@@ -53,7 +53,7 @@ export function toolsToAI(
       shape[key] = paramToValibot(v, param)
     }
 
-    result[def.name] = tool({
+    const toolOpts: Record<string, unknown> = {
       description: def.description,
       inputSchema: valibotSchema(v.object(shape as any)),
       execute: async (args: Record<string, unknown>) => {
@@ -71,7 +71,21 @@ export function toolsToAI(
           options.onAfterExecute?.(def)
         }
       }
-    })
+    }
+
+    if (def.name === 'export_image') {
+      toolOpts.experimental_toToolResultContent = (res: unknown) => {
+        if (res && typeof res === 'object' && 'base64' in res && 'mimeType' in res) {
+          const r = res as { base64: string; mimeType: string }
+          return [
+            { type: 'image' as const, data: r.base64, mimeType: r.mimeType }
+          ]
+        }
+        return [{ type: 'text' as const, text: JSON.stringify(res) }]
+      }
+    }
+
+    result[def.name] = tool(toolOpts)
   }
 
   return result

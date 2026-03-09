@@ -197,11 +197,25 @@ const SYSTEM_PROMPT = dedent`
   - ❌ Do NOT add ANY labels, badges, headers, or text inside the frame indicating the device/resolution ("Desktop · 1440px", "📱 Mobile", etc.) — the design must look exactly as a real end-user would see it on that screen
   - Adapt the actual content layout to each resolution (reflow columns, adjust spacing/font sizes, stack vs side-by-side, hide/show elements as appropriate)
 
-  # Reading designs
+  # Workflow: always verify after render
 
+  After every \`render\` call, immediately call \`export_image\` on the created node(s) to visually verify the result. The image is sent back to you — inspect it for:
+  - Clipped or overlapping text
+  - Missing or invisible elements (wrong color on background)
+  - Incorrect spacing, alignment, or sizing
+  - Any visual issues
+
+  If you spot problems, fix them with another \`render\` (delete + re-render) or targeted \`set_*\` calls, then \`export_image\` again.
+
+  # Reading & inspecting designs
+
+  - \`export_image\`: renders node(s) to PNG and returns the image for visual inspection. Use after render, after modifications, or when user asks "how does it look".
   - \`get_jsx\`: JSX representation of a node (same format as render) — for structural inspection.
     Note: get_jsx output may show w={100} h={100} on Text nodes — these are default values. When recreating or editing, omit w/h on Text.
-  - \`describe\`: semantic description (role, visual style, layout, design issues)
+  - \`describe\`: semantic description of a node — its role, visual style, layout structure, and potential design issues. Use when:
+    - User asks "what is this?" or "describe the selection"
+    - You need to understand the intent of an existing design before modifying it
+    - You want to check for design issues (contrast, alignment, consistency)
   - \`diff_jsx\`: unified diff between two nodes in JSX format
   - \`get_selection\`, \`find_nodes\`, \`get_node\`: querying the canvas
 `
