@@ -1,5 +1,6 @@
 import { parseColor } from '../color'
 import { DEFAULT_SHADOW_COLOR } from '../constants'
+import type { CharacterStyleOverride, Effect, StyleRun } from '../scene-graph'
 
 import { defineTool } from './schema'
 
@@ -78,19 +79,19 @@ export const setEffects = defineTool({
     if (!node) return { error: `Node "${args.id}" not found` }
 
     const isBlur = args.type === 'FOREGROUND_BLUR' || args.type === 'BACKGROUND_BLUR'
-    const effect: Record<string, unknown> = {
-      type: args.type,
+    const color = isBlur
+      ? { r: 0, g: 0, b: 0, a: 1 }
+      : (args.color ? parseColor(args.color) : { ...DEFAULT_SHADOW_COLOR })
+    const effect: Effect = {
+      type: args.type as Effect['type'],
       visible: true,
-      radius: args.radius ?? 4
+      radius: args.radius ?? 4,
+      color,
+      offset: { x: isBlur ? 0 : (args.offset_x ?? 0), y: isBlur ? 0 : (args.offset_y ?? 4) },
+      spread: isBlur ? 0 : (args.spread ?? 0)
     }
 
-    if (!isBlur) {
-      effect.color = args.color ? parseColor(args.color) : { ...DEFAULT_SHADOW_COLOR }
-      effect.offset = { x: args.offset_x ?? 0, y: args.offset_y ?? 4 }
-      effect.spread = args.spread ?? 0
-    }
-
-    node.effects = [...node.effects, effect as any]
+    node.effects = [...node.effects, effect]
     return { id: args.id, effects: node.effects.length }
   }
 })
@@ -196,8 +197,8 @@ export const setLayout = defineTool({
 
     if (args.direction) node.layoutMode = args.direction as 'HORIZONTAL' | 'VERTICAL'
     node.itemSpacing = args.spacing ?? 0
-    node.primaryAxisAlignItems = (args.align ?? 'MIN') as any
-    node.counterAxisAlignItems = (args.counter_align ?? 'MIN') as any
+    node.primaryAxisAlignItems = args.align ?? 'MIN'
+    node.counterAxisAlignItems = args.counter_align ?? 'MIN'
 
     const ph = args.padding_horizontal ?? args.padding ?? 0
     const pv = args.padding_vertical ?? args.padding ?? 0
@@ -383,13 +384,17 @@ export const setFontRange = defineTool({
   execute: (figma, args) => {
     const node = figma.getNodeById(args.id)
     if (!node) return { error: `Node "${args.id}" not found` }
-    const run: Record<string, unknown> = { start: args.start, end: args.end }
-    if (args.family) run.fontFamily = args.family
-    if (args.size) run.fontSize = args.size
-    if (args.style) run.fontStyle = args.style
-    if (args.color) run.color = parseColor(args.color)
+    const style: CharacterStyleOverride = {}
+    if (args.family) style.fontFamily = args.family
+    if (args.size) style.fontSize = args.size
+    if (args.style === 'italic' || args.style === 'Italic') style.italic = true
+    const run: StyleRun = {
+      start: args.start,
+      length: args.end - args.start,
+      style
+    }
     figma.graph.updateNode(node.id, {
-      styleRuns: [...(figma.graph.getNode(node.id)?.styleRuns ?? []), run as any]
+      styleRuns: [...(figma.graph.getNode(node.id)?.styleRuns ?? []), run]
     })
     return { id: args.id, range: { start: args.start, end: args.end } }
   }

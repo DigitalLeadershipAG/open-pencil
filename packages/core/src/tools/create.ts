@@ -5,7 +5,7 @@ import { defineTool, nodeSummary } from './schema'
 
 import type { FigmaAPI, FigmaNodeProxy } from '../figma-api'
 import type { Color } from '../types'
-import type { Stroke, StrokeCap, StrokeJoin } from '../scene-graph'
+import type { Stroke, StrokeCap, StrokeJoin, VectorNetwork } from '../scene-graph'
 
 export const createShape = defineTool({
   name: 'create_shape',
@@ -139,7 +139,7 @@ export const createVector = defineTool({
     node.y = args.y
     if (args.name) node.name = args.name
     if (args.path) {
-      figma.graph.updateNode(node.id, { vectorNetwork: JSON.parse(args.path) } as any)
+      figma.graph.updateNode(node.id, { vectorNetwork: JSON.parse(args.path) as VectorNetwork })
     }
     if (args.fill) {
       node.fills = [{ type: 'SOLID', color: parseColor(args.fill), opacity: 1, visible: true }]
