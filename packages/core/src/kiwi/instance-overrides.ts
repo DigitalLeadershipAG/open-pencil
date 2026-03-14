@@ -70,7 +70,7 @@ export function populateAndApplyOverrides(
   // are complete.
   function ensurePopulated(nodeId: string, visiting: Set<string>): void {
     const node = graph.getNode(nodeId)
-    if (!node || node.type !== 'INSTANCE' || !node.componentId || node.childIds.length > 0) return
+    if (!node?.componentId || node.type !== 'INSTANCE' || node.childIds.length > 0) return
     if (visiting.has(nodeId)) return
     visiting.add(nodeId)
 
@@ -606,7 +606,7 @@ export function populateAndApplyOverrides(
     const srcChild = graph.getNode(srcChildId)
     if (!srcChild) return
 
-    for (const childId of [...tgtNode.childIds]) graph.deleteNode(childId)
+    for (const childId of tgtNode.childIds.slice()) graph.deleteNode(childId)
     graph.updateNode(tgtNode.id, { name: srcChild.name, componentId: srcChild.componentId })
     syncNodeProps(srcChild, tgtNode)
     if (srcChild.childIds.length > 0) {
