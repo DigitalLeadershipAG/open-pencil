@@ -359,6 +359,12 @@ export function createEditorStore() {
     state.selectedIds = new Set()
   }
 
+  function validateEnteredContainer() {
+    if (state.enteredContainerId && !graph.getNode(state.enteredContainerId)) {
+      state.enteredContainerId = null
+    }
+  }
+
   function enterContainer(id: string) {
     state.enteredContainerId = id
   }
@@ -2059,7 +2065,7 @@ export function createEditorStore() {
     const entries: Array<{ id: string; parentId: string; snapshot: SceneNode; index: number }> = []
     for (const id of state.selectedIds) {
       const node = graph.getNode(id)
-      if (!node) continue
+      if (!node || node.locked) continue
       const parentId = node.parentId ?? state.currentPageId
       const parent = graph.getNode(parentId)
       const index = parent?.childIds.indexOf(id) ?? -1
@@ -2248,10 +2254,12 @@ export function createEditorStore() {
 
   function undoAction() {
     undo.undo()
+    validateEnteredContainer()
   }
 
   function redoAction() {
     undo.redo()
+    validateEnteredContainer()
     requestRender()
   }
 
@@ -2369,6 +2377,7 @@ export function createEditorStore() {
     clearSelection,
     enterContainer,
     exitContainer,
+    validateEnteredContainer,
     selectAll,
     setMarquee,
     setSnapGuides,
