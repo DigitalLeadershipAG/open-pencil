@@ -56,7 +56,10 @@ watch(jsxCode, () => {
   copied.value = false
 })
 
+const canEdit = computed(() => jsxFormat.value === 'openpencil')
+
 function enterEditMode() {
+  jsxFormat.value = 'openpencil'
   editorCode.value = jsxCode.value
   replaceIds.value = [...store.state.selectedIds]
   editing.value = true
@@ -237,9 +240,10 @@ function handleEditorKeydown(e: KeyboardEvent) {
       </div>
       <div class="flex items-center gap-1">
         <button
+          v-if="canEdit"
           data-test-id="code-panel-edit"
           class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted hover:bg-hover hover:text-surface"
-          title="Write JSX"
+          title="Edit JSX"
           @click="enterEditMode"
         >
           <icon-lucide-pencil class="size-3" />
