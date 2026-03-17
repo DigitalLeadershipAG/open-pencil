@@ -16,6 +16,7 @@ const editing = ref(false)
 const editorCode = ref('')
 const editorError = ref('')
 const applying = ref(false)
+const replaceIds = ref<string[]>([])
 const textareaRef = ref<HTMLTextAreaElement>()
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
 
@@ -57,6 +58,7 @@ watch(jsxCode, () => {
 
 function enterEditMode() {
   editorCode.value = jsxCode.value
+  replaceIds.value = [...store.state.selectedIds]
   editing.value = true
   editorError.value = ''
   void nextTick(() => textareaRef.value?.focus())
@@ -66,6 +68,7 @@ function exitEditMode() {
   editing.value = false
   editorCode.value = ''
   editorError.value = ''
+  replaceIds.value = []
 }
 
 async function applyJSX() {
@@ -76,8 +79,9 @@ async function applyJSX() {
   editorError.value = ''
 
   try {
-    await store.renderJSXWithUndo(code)
+    await store.renderJSXWithUndo(code, replaceIds.value.length > 0 ? replaceIds.value : undefined)
     editorCode.value = ''
+    replaceIds.value = []
     editing.value = false
   } catch (e) {
     editorError.value = e instanceof Error ? e.message : String(e)
