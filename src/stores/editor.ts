@@ -2084,6 +2084,36 @@ export function createEditorStore() {
     }
   }
 
+  async function renderJSXWithUndo(jsxString: string) {
+    const { renderJSX } = await import('@open-pencil/core/render')
+    const pageId = state.currentPageId
+    const prevSelection = new Set(state.selectedIds)
+    const result = await renderJSX(graph, jsxString, { parentId: pageId })
+    const rootId = result.id
+    const allNodes = collectSubtrees(graph, [rootId])
+    state.selectedIds = new Set([rootId])
+    requestRender()
+
+    undo.push({
+      label: 'Render JSX',
+      forward: () => {
+        for (const snapshot of allNodes) {
+          graph.createNode(snapshot.type, snapshot.parentId ?? pageId, {
+            ...snapshot,
+            childIds: []
+          })
+        }
+        computeAllLayouts(graph, pageId)
+        state.selectedIds = new Set([rootId])
+      },
+      inverse: () => {
+        graph.deleteNode(rootId)
+        computeAllLayouts(graph, pageId)
+        state.selectedIds = prevSelection
+      }
+    })
+  }
+
   function deleteSelected() {
     const entries: Array<{ id: string; parentId: string; snapshot: SceneNode; index: number }> = []
     for (const id of state.selectedIds) {
@@ -2452,6 +2482,7 @@ export function createEditorStore() {
     duplicateSelected,
     writeCopyData,
     pasteFromHTML,
+    renderJSXWithUndo,
     mobileCopy,
     mobileCut,
     mobilePaste,
