@@ -2088,10 +2088,10 @@ export function createEditorStore() {
     const { renderJSX } = await import('@open-pencil/core/render')
     const pageId = state.currentPageId
     const prevSelection = new Set(state.selectedIds)
-    const result = await renderJSX(graph, jsxString, { parentId: pageId })
-    const rootId = result.id
-    const allNodes = collectSubtrees(graph, [rootId])
-    state.selectedIds = new Set([rootId])
+    const results = await renderJSX(graph, jsxString, { parentId: pageId })
+    const rootIds = results.map((r) => r.id)
+    const allNodes = collectSubtrees(graph, rootIds)
+    state.selectedIds = new Set(rootIds)
     requestRender()
 
     undo.push({
@@ -2104,10 +2104,10 @@ export function createEditorStore() {
           })
         }
         computeAllLayouts(graph, pageId)
-        state.selectedIds = new Set([rootId])
+        state.selectedIds = new Set(rootIds)
       },
       inverse: () => {
-        graph.deleteNode(rootId)
+        for (const id of [...rootIds].reverse()) graph.deleteNode(id)
         computeAllLayouts(graph, pageId)
         state.selectedIds = prevSelection
       }
