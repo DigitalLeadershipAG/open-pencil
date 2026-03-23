@@ -187,6 +187,11 @@ export function useKeyboard() {
   )
 
   // --- Plain keys (no modifiers) ---
+  function isInputFocused() {
+    const el = document.activeElement
+    return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+  }
+
   function plain(key: string): ComputedRef<boolean> {
     return computed(
       () =>
@@ -194,7 +199,8 @@ export function useKeyboard() {
         !keys['meta'].value &&
         !keys['control'].value &&
         !keys['shift'].value &&
-        !keys['alt'].value
+        !keys['alt'].value &&
+        !isInputFocused()
     )
   }
 
