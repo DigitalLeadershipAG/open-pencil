@@ -1,4 +1,5 @@
-import { DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY } from '../constants'
+import { resolveRGBAForPreview } from '../color-management'
+import { DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE } from '../constants'
 import { resolveNodeTextDirection } from '../direction'
 import { getArabicFallbackFamilies, getCJKFallbackFamilies, isFontLoaded } from '../fonts'
 
@@ -132,7 +133,7 @@ function addStyledRuns(
     if (s.fills) {
       const visibleFill = s.fills.find((f) => f.visible && f.type === 'SOLID')
       if (visibleFill) {
-        const c = visibleFill.color
+        const c = resolveRGBAForPreview(visibleFill.color).color
         runColor = ck.Color4f(c.r, c.g, c.b, c.a * visibleFill.opacity)
       }
     }

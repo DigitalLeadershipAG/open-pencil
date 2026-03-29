@@ -110,11 +110,11 @@ const { panels } = useI18n()
             </div>
 
             <div v-if="ctx.isFlex" class="mt-2">
-              <label class="mb-1 block text-[11px] text-muted">Flow</label>
+              <label class="mb-1 block text-[11px] text-muted">{{ panels.flow }}</label>
               <AppSelect
                 :model-value="ctx.layoutDirection"
                 :options="[
-                  { value: 'AUTO', label: 'Auto' },
+                  { value: 'AUTO', label: panels.auto },
                   { value: 'LTR', label: 'LTR' },
                   { value: 'RTL', label: 'RTL' }
                 ]"
@@ -130,7 +130,7 @@ const { panels } = useI18n()
               >
                 <div class="mb-1 flex items-center justify-between">
                   <label class="text-[11px] text-muted">{{
-                    trackProp === 'gridTemplateColumns' ? 'Columns' : 'Rows'
+                    trackProp === 'gridTemplateColumns' ? panels.columns : panels.rows
                   }}</label>
                   <button
                     class="cursor-pointer rounded border-none bg-transparent px-1 text-xs leading-none text-muted hover:bg-hover hover:text-surface"
@@ -289,7 +289,7 @@ const { panels } = useI18n()
                 )
               "
             />
-            Clip content
+            {{ panels.clipContent }}
           </label>
         </div>
       </template>
