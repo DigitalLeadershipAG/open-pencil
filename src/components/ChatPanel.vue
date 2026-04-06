@@ -77,12 +77,12 @@ async function handleSubmit(text: string) {
     if (c) chat.value = markRaw(c)
   } catch (e) {
     console.error('Failed to initialize chat:', e)
-    toast.show(e instanceof Error ? e.message : String(e), 'error')
+    toast.error(e instanceof Error ? e.message : String(e))
     return
   }
   chat.value?.sendMessage({ text }).catch((e: unknown) => {
     console.error('Chat error:', e)
-    toast.show(e instanceof Error ? e.message : String(e), 'error')
+    toast.error(e instanceof Error ? e.message : String(e))
   })
 }
 
