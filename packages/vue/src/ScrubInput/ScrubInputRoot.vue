@@ -99,6 +99,14 @@ function commitEdit(e: Event) {
   }
 }
 
+function liveUpdate(e: Event) {
+  const val = +(e.target as HTMLInputElement).value
+  if (!Number.isNaN(val)) {
+    const clamped = Math.min(props.max, Math.max(props.min, val))
+    emit('update:modelValue', clamped)
+  }
+}
+
 function onKeydown(e: KeyboardEvent) {
   if (e.code === 'Enter') commitEdit(e)
   else if (e.code === 'Escape') editing.value = false
@@ -113,6 +121,7 @@ const ctx = {
   inputRef,
   startScrub,
   startEdit,
+  liveUpdate,
   commitEdit,
   onKeydown
 }
