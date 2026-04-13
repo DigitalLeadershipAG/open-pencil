@@ -53,7 +53,6 @@ function onToggleCorners() {
       <Tip :label="panels.toggleVisibility">
         <button
           data-test-id="appearance-visibility"
-          tabindex="0"
           class="flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-muted hover:bg-hover hover:text-surface"
           :class="{ 'text-accent': visibilityState === 'hidden' }"
           @click="toggleVisibility"
@@ -95,7 +94,6 @@ function onToggleCorners() {
         <Tip :label="panels.independentCornerRadii">
           <button
             data-test-id="independent-corners-toggle"
-            tabindex="0"
             class="flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded border border-border bg-input text-muted hover:bg-hover hover:text-surface"
             :class="{ '!border-accent !text-accent': showIndependentCorners }"
             @click="onToggleCorners"

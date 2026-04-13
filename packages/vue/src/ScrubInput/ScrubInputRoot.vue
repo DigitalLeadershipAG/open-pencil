@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, toRef } from 'vue'
+import { ref, computed, toRef, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
 import { provideScrubInput } from './context'
@@ -25,6 +25,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:modelValue': [value: number]
   commit: [value: number, previous: number]
+  'editing-change': [editing: boolean]
 }>()
 
 const editing = ref(false)
@@ -127,6 +128,8 @@ const ctx = {
 }
 
 provideScrubInput(ctx)
+
+watch(editing, (v) => emit('editing-change', v))
 </script>
 
 <template>

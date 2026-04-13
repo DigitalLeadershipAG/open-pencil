@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ScrubInputRoot, ScrubInputField, ScrubInputDisplay } from '@open-pencil/vue'
+import { useEditorStore } from '@/stores/editor'
+
+const store = useEditorStore()
 
 const { modelValue, min, max, step, icon, label, suffix, sensitivity, placeholder } = defineProps<{
   modelValue: number | symbol
@@ -30,6 +33,7 @@ const emit = defineEmits<{
     :placeholder="placeholder"
     @update:model-value="emit('update:modelValue', $event)"
     @commit="(val: number, prev: number) => emit('commit', val, prev)"
+    @editing-change="store.state.scrubInputFocused = $event"
   >
     <div
       data-test-id="scrub-input"

@@ -15,12 +15,7 @@ import { openFileDialog } from './use-menu'
 import type { ComputedRef } from 'vue'
 
 function isEditing(e: Event) {
-  const t = e.target
-  return (
-    t instanceof HTMLInputElement ||
-    t instanceof HTMLTextAreaElement ||
-    (t instanceof HTMLElement && t.closest('[data-test-id="scrub-input"]') != null)
-  )
+  return e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
 }
 
 const NUDGE_DELTAS: Partial<Record<string, [number, number]>> = {
@@ -198,12 +193,6 @@ export function useKeyboard() {
     )
   }
 
-  function isScrubInputFocused() {
-    const el = document.activeElement
-    if (!el) return false
-    return el.closest('[data-test-id="scrub-input"]') != null
-  }
-
   function plain(key: string, options?: { allowAlt?: boolean }): ComputedRef<boolean> {
     const allowAlt = options?.allowAlt ?? false
     return computed(
@@ -214,7 +203,7 @@ export function useKeyboard() {
         !keys['shift'].value &&
         (allowAlt || !keys['alt'].value) &&
         !store.state.editingTextId &&
-        !isScrubInputFocused()
+        !store.state.scrubInputFocused
     )
   }
 
